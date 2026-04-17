@@ -558,554 +558,617 @@
     </article>
   </template>
 
-  <script>
-    const STORAGE_KEY = 'spotless_co_job_booking_calendar_v1';
+ <script>
+  const STORAGE_KEY = 'spotless_co_job_booking_calendar_v1';
+  const QUOTE_STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v4';
+  const DASHBOARD_SCHEDULE_KEY = 'spotless_schedule';
 
-    const els = {
-      clientName: document.getElementById('clientName'),
-      propertyAddress: document.getElementById('propertyAddress'),
-      serviceType: document.getElementById('serviceType'),
-      bookingStatus: document.getElementById('bookingStatus'),
-      bookingDate: document.getElementById('bookingDate'),
-      startTime: document.getElementById('startTime'),
-      endTime: document.getElementById('endTime'),
-      quotedPrice: document.getElementById('quotedPrice'),
-      bookingNotes: document.getElementById('bookingNotes'),
-      saveBookingBtn: document.getElementById('saveBookingBtn'),
-      resetFormBtn: document.getElementById('resetFormBtn'),
-      exportSelectedBtn: document.getElementById('exportSelectedBtn'),
-      clearAllBtn: document.getElementById('clearAllBtn'),
-      prevMonthBtn: document.getElementById('prevMonthBtn'),
-      nextMonthBtn: document.getElementById('nextMonthBtn'),
-      monthTitle: document.getElementById('monthTitle'),
-      calendarGrid: document.getElementById('calendarGrid'),
-      bookingList: document.getElementById('bookingList'),
-      bookingCardTemplate: document.getElementById('bookingCardTemplate'),
-      summaryTotalJobs: document.getElementById('summaryTotalJobs'),
-      summaryMonthJobs: document.getElementById('summaryMonthJobs'),
-      summarySelectedDate: document.getElementById('summarySelectedDate'),
-      summarySelectedJobs: document.getElementById('summarySelectedJobs')
+  const els = {
+    clientName: document.getElementById('clientName'),
+    propertyAddress: document.getElementById('propertyAddress'),
+    serviceType: document.getElementById('serviceType'),
+    bookingStatus: document.getElementById('bookingStatus'),
+    bookingDate: document.getElementById('bookingDate'),
+    startTime: document.getElementById('startTime'),
+    endTime: document.getElementById('endTime'),
+    quotedPrice: document.getElementById('quotedPrice'),
+    bookingNotes: document.getElementById('bookingNotes'),
+    saveBookingBtn: document.getElementById('saveBookingBtn'),
+    resetFormBtn: document.getElementById('resetFormBtn'),
+    exportSelectedBtn: document.getElementById('exportSelectedBtn'),
+    clearAllBtn: document.getElementById('clearAllBtn'),
+    prevMonthBtn: document.getElementById('prevMonthBtn'),
+    nextMonthBtn: document.getElementById('nextMonthBtn'),
+    monthTitle: document.getElementById('monthTitle'),
+    calendarGrid: document.getElementById('calendarGrid'),
+    bookingList: document.getElementById('bookingList'),
+    bookingCardTemplate: document.getElementById('bookingCardTemplate'),
+    summaryTotalJobs: document.getElementById('summaryTotalJobs'),
+    summaryMonthJobs: document.getElementById('summaryMonthJobs'),
+    summarySelectedDate: document.getElementById('summarySelectedDate'),
+    summarySelectedJobs: document.getElementById('summarySelectedJobs')
+  };
+
+  function todayIso() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function todayLocalDateString() {
+    return new Date().toLocaleDateString();
+  }
+
+  function defaultState() {
+    const today = new Date();
+    return {
+      bookings: [],
+      selectedDate: todayIso(),
+      currentMonth: today.getMonth(),
+      currentYear: today.getFullYear(),
+      editingId: null
     };
-    
-    const STORAGE_KEY = 'spotless_co_job_booking_calendar_v1';
-const QUOTE_STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v4';
-
-function loadQuotePlanner() {
-  try {
-    return JSON.parse(localStorage.getItem(QUOTE_STORAGE_KEY)) || {};
-  } catch (error) {
-    console.error('Failed to load quote planner data:', error);
-    return {};
-  }
-}
-
-function prefillFromQuotePlanner() {
-  const quote = loadQuotePlanner();
-  const rooms = Array.isArray(quote.rooms) ? quote.rooms : [];
-
-  if (!quote.jobName && !quote.clientName && !quote.jobAddress && !quote.jobHourlyRate && !rooms.length) {
-    return;
   }
 
-  if (!els.clientName.value) {
-    els.clientName.value = (quote.clientName || quote.jobName || '').trim();
-  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
 
-  if (!els.propertyAddress.value) {
-    els.propertyAddress.value = (quote.jobAddress || '').trim();
-  }
-
-  if (!els.quotedPrice.value) {
-    const totalMinutes = rooms.reduce((sum, room) => {
-      const mins = parseFloat(room.estimatedTime);
-      return sum + (Number.isFinite(mins) ? mins : 0);
-    }, 0);
-
-    const hourlyRate = parseFloat(quote.jobHourlyRate);
-    const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
-    const estimatedPrice = (totalMinutes / 60) * safeRate;
-
-    if (estimatedPrice > 0) {
-      els.quotedPrice.value = estimatedPrice.toFixed(2);
-    }
-  }
-
-  if (!els.bookingNotes.value) {
-    const roomSummary = rooms.map((room, index) => {
-      const roomLabel = room.roomName || room.roomType || `Room ${index + 1}`;
-      const cleanType = room.cleaningType || 'Cleaning type not set';
-      const time = room.estimatedTime || 0;
-      return `${index + 1}. ${roomLabel} — ${cleanType} — ${time} min`;
-    }).join('\n');
-
-    const notes = [
-      quote.jobNotes || '',
-      roomSummary ? '\nQuote Rooms:\n' + roomSummary : ''
-    ].join('').trim();
-
-    els.bookingNotes.value = notes;
-  }
-
-  if (!els.serviceType.value || els.serviceType.value === 'Standard Clean') {
-    const firstRoom = rooms[0];
-    if (firstRoom?.cleaningType) {
-      els.serviceType.value = firstRoom.cleaningType;
-    }
-  }
-}
-
-    function syncBookingToQuotePlanner(booking) {
-  try {
-    const key = 'spotless_co_cleaning_quote_planner_v4';
-
-    const quote = JSON.parse(localStorage.getItem(key)) || {};
-
-    quote.clientName = booking.clientName || quote.clientName || '';
-    quote.jobName = booking.clientName || quote.jobName || '';
-    quote.jobAddress = booking.propertyAddress || quote.jobAddress || '';
-
-    localStorage.setItem(key, JSON.stringify(quote));
-  } catch (error) {
-    console.error('Failed syncing booking to quote planner:', error);
-  }
-}
-    function todayIso(){
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth() + 1).padStart(2, '0');
-      const d = String(now.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-
-    function defaultState(){
-      const today = new Date();
+      const parsed = JSON.parse(raw);
       return {
-        bookings: [],
-        selectedDate: todayIso(),
-        currentMonth: today.getMonth(),
-        currentYear: today.getFullYear(),
+        bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [],
+        selectedDate: parsed.selectedDate || todayIso(),
+        currentMonth: Number.isInteger(parsed.currentMonth) ? parsed.currentMonth : new Date().getMonth(),
+        currentYear: Number.isInteger(parsed.currentYear) ? parsed.currentYear : new Date().getFullYear(),
         editingId: null
       };
+    } catch (error) {
+      console.error('Failed to load booking data:', error);
+      return defaultState();
+    }
+  }
+
+  function loadQuotePlanner() {
+    try {
+      return JSON.parse(localStorage.getItem(QUOTE_STORAGE_KEY)) || {};
+    } catch (error) {
+      console.error('Failed to load quote planner data:', error);
+      return {};
+    }
+  }
+
+  let state = loadState();
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        bookings: state.bookings,
+        selectedDate: state.selectedDate,
+        currentMonth: state.currentMonth,
+        currentYear: state.currentYear
+      }));
+    } catch (error) {
+      console.error('Failed to save booking data:', error);
+    }
+  }
+
+  function syncDashboardSchedule() {
+    try {
+      const scheduleItems = state.bookings.map(booking => ({
+        id: booking.id,
+        title: booking.clientName || 'Untitled appointment',
+        note: `${booking.serviceType || 'Cleaning Job'}${booking.propertyAddress ? ' • ' + booking.propertyAddress : ''}`,
+        status: booking.bookingStatus || 'Pending',
+        time: booking.startTime || '--',
+        date: booking.bookingDate
+          ? new Date(`${booking.bookingDate}T12:00:00`).toLocaleDateString()
+          : ''
+      }));
+
+      localStorage.setItem(DASHBOARD_SCHEDULE_KEY, JSON.stringify(scheduleItems));
+    } catch (error) {
+      console.error('Failed to sync dashboard schedule:', error);
+    }
+  }
+
+  function syncBookingToQuotePlanner(booking) {
+    try {
+      const quote = JSON.parse(localStorage.getItem(QUOTE_STORAGE_KEY)) || {};
+
+      quote.clientName = booking.clientName || quote.clientName || '';
+      quote.jobName = booking.clientName || quote.jobName || '';
+      quote.jobAddress = booking.propertyAddress || quote.jobAddress || '';
+
+      localStorage.setItem(QUOTE_STORAGE_KEY, JSON.stringify(quote));
+    } catch (error) {
+      console.error('Failed syncing booking to quote planner:', error);
+    }
+  }
+
+  function formatCurrency(value) {
+    const amount = parseFloat(value);
+    return new Intl.NumberFormat('en-CA', {
+      style: 'currency',
+      currency: 'CAD'
+    }).format(Number.isFinite(amount) ? amount : 0);
+  }
+
+  function formatHumanDate(dateStr) {
+    if (!dateStr) return 'Not selected';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return new Intl.DateTimeFormat('en-CA', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(date);
+  }
+
+  function getMonthName(month, year) {
+    return new Intl.DateTimeFormat('en-CA', {
+      month: 'long',
+      year: 'numeric'
+    }).format(new Date(year, month, 1));
+  }
+
+  function combineDateTime(dateStr, timeStr) {
+    if (!dateStr) return null;
+    return new Date(`${dateStr}T${timeStr || '09:00'}:00`);
+  }
+
+  function pad(num) {
+    return String(num).padStart(2, '0');
+  }
+
+  function toIcsDate(date) {
+    return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+  }
+
+  function escapeIcsText(text) {
+    return String(text || '')
+      .replace(/\\/g, '\\\\')
+      .replace(/\n/g, '\\n')
+      .replace(/,/g, '\\,')
+      .replace(/;/g, '\\;');
+  }
+
+  function prefillFromQuotePlanner() {
+    const quote = loadQuotePlanner();
+    const rooms = Array.isArray(quote.rooms) ? quote.rooms : [];
+
+    if (!els.clientName.value) {
+      els.clientName.value = (quote.clientName || quote.jobName || '').trim();
     }
 
-    function loadState(){
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(!raw) return defaultState();
-        const parsed = JSON.parse(raw);
-        return {
-          bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [],
-          selectedDate: parsed.selectedDate || todayIso(),
-          currentMonth: Number.isInteger(parsed.currentMonth) ? parsed.currentMonth : new Date().getMonth(),
-          currentYear: Number.isInteger(parsed.currentYear) ? parsed.currentYear : new Date().getFullYear(),
-          editingId: null
-        };
-      } catch (error) {
-        console.error('Failed to load booking data:', error);
-        return defaultState();
+    if (!els.propertyAddress.value) {
+      els.propertyAddress.value = (quote.jobAddress || '').trim();
+    }
+
+    if ((!els.serviceType.value || els.serviceType.value === 'Standard Clean') && rooms.length) {
+      if (rooms[0]?.cleaningType) {
+        els.serviceType.value = rooms[0].cleaningType;
       }
     }
 
-    let state = loadState();
+    if (!els.quotedPrice.value) {
+      const totalMinutes = rooms.reduce((sum, room) => {
+        const mins = parseFloat(room.estimatedTime);
+        return sum + (Number.isFinite(mins) ? mins : 0);
+      }, 0);
 
-    function saveState(){
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          bookings: state.bookings,
-          selectedDate: state.selectedDate,
-          currentMonth: state.currentMonth,
-          currentYear: state.currentYear
-        }));
-      } catch (error) {
-        console.error('Failed to save booking data:', error);
+      const hourlyRate = parseFloat(quote.jobHourlyRate);
+      const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
+      const estimatedPrice = (totalMinutes / 60) * safeRate;
+
+      if (estimatedPrice > 0) {
+        els.quotedPrice.value = estimatedPrice.toFixed(2);
       }
     }
 
-    function formatCurrency(value){
-      const amount = parseFloat(value);
-      return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(Number.isFinite(amount) ? amount : 0);
+    if (!els.bookingNotes.value) {
+      const roomSummary = rooms.map((room, index) => {
+        const roomLabel = room.roomName || room.roomType || `Room ${index + 1}`;
+        const cleanType = room.cleaningType || 'Cleaning type not set';
+        const time = room.estimatedTime || 0;
+        return `${index + 1}. ${roomLabel} — ${cleanType} — ${time} min`;
+      }).join('\n');
+
+      const noteParts = [];
+      if (quote.jobNotes) noteParts.push(quote.jobNotes);
+      if (roomSummary) noteParts.push(`Quote Rooms:\n${roomSummary}`);
+
+      els.bookingNotes.value = noteParts.join('\n\n').trim();
+    }
+  }
+
+  function buildBookingFromForm() {
+    return {
+      id: state.editingId || (crypto.randomUUID ? crypto.randomUUID() : `booking_${Date.now()}`),
+      clientName: els.clientName.value.trim(),
+      propertyAddress: els.propertyAddress.value.trim(),
+      serviceType: els.serviceType.value,
+      bookingStatus: els.bookingStatus.value,
+      bookingDate: els.bookingDate.value,
+      startTime: els.startTime.value,
+      endTime: els.endTime.value,
+      quotedPrice: els.quotedPrice.value,
+      bookingNotes: els.bookingNotes.value.trim(),
+      createdAt: new Date().toISOString()
+    };
+  }
+
+  function validateBooking(booking) {
+    if (!booking.clientName) return 'Please enter the client name.';
+    if (!booking.bookingDate) return 'Please select a booking date.';
+    if (!booking.startTime) return 'Please select a start time.';
+    if (booking.endTime && booking.endTime <= booking.startTime) return 'End time must be after the start time.';
+    return '';
+  }
+
+  function resetForm() {
+    state.editingId = null;
+    els.clientName.value = '';
+    els.propertyAddress.value = '';
+    els.serviceType.value = 'Standard Clean';
+    els.bookingStatus.value = 'Pending';
+    els.bookingDate.value = state.selectedDate || todayIso();
+    els.startTime.value = '';
+    els.endTime.value = '';
+    els.quotedPrice.value = '';
+    els.bookingNotes.value = '';
+    els.saveBookingBtn.textContent = 'Save Booking';
+
+    prefillFromQuotePlanner();
+  }
+
+  function saveBooking() {
+    const booking = buildBookingFromForm();
+    const error = validateBooking(booking);
+
+    if (error) {
+      alert(error);
+      return;
     }
 
-    function formatHumanDate(dateStr){
-      if(!dateStr) return 'Not selected';
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      return new Intl.DateTimeFormat('en-CA', { month: 'long', day: 'numeric', year: 'numeric' }).format(date);
-    }
+    const existingIndex = state.bookings.findIndex(item => item.id === booking.id);
 
-    function getMonthName(month, year){
-      return new Intl.DateTimeFormat('en-CA', { month: 'long', year: 'numeric' }).format(new Date(year, month, 1));
-    }
-
-    function combineDateTime(dateStr, timeStr){
-      if(!dateStr) return null;
-      return new Date(`${dateStr}T${timeStr || '09:00'}:00`);
-    }
-
-    function pad(num){
-      return String(num).padStart(2, '0');
-    }
-
-    function toIcsDate(date){
-      return `${date.getUTCFullYear()}${pad(date.getUTCMonth()+1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
-    }
-
-    function escapeIcsText(text){
-      return String(text || '')
-        .replace(/\\/g, '\\\\')
-        .replace(/\n/g, '\\n')
-        .replace(/,/g, '\\,')
-        .replace(/;/g, '\\;');
-    }
-
-    function buildBookingFromForm(){
-      return {
-        id: state.editingId || crypto.randomUUID(),
-        clientName: els.clientName.value.trim(),
-        propertyAddress: els.propertyAddress.value.trim(),
-        serviceType: els.serviceType.value,
-        bookingStatus: els.bookingStatus.value,
-        bookingDate: els.bookingDate.value,
-        startTime: els.startTime.value,
-        endTime: els.endTime.value,
-        quotedPrice: els.quotedPrice.value,
-        bookingNotes: els.bookingNotes.value.trim(),
-        createdAt: new Date().toISOString()
+    if (existingIndex >= 0) {
+      state.bookings[existingIndex] = {
+        ...state.bookings[existingIndex],
+        ...booking
       };
+    } else {
+      state.bookings.push(booking);
     }
 
-    function validateBooking(booking){
-      if(!booking.clientName) return 'Please enter the client name.';
-      if(!booking.bookingDate) return 'Please select a booking date.';
-      if(!booking.startTime) return 'Please select a start time.';
-      if(booking.endTime && booking.endTime <= booking.startTime) return 'End time must be after the start time.';
-      return '';
+    state.selectedDate = booking.bookingDate;
+    const selected = new Date(`${booking.bookingDate}T12:00:00`);
+    state.currentMonth = selected.getMonth();
+    state.currentYear = selected.getFullYear();
+
+    saveState();
+    syncDashboardSchedule();
+    syncBookingToQuotePlanner(booking);
+    resetForm();
+    render();
+  }
+
+  function editBooking(id) {
+    const booking = state.bookings.find(item => item.id === id);
+    if (!booking) return;
+
+    state.editingId = id;
+    els.clientName.value = booking.clientName || '';
+    els.propertyAddress.value = booking.propertyAddress || '';
+    els.serviceType.value = booking.serviceType || 'Standard Clean';
+    els.bookingStatus.value = booking.bookingStatus || 'Pending';
+    els.bookingDate.value = booking.bookingDate || '';
+    els.startTime.value = booking.startTime || '';
+    els.endTime.value = booking.endTime || '';
+    els.quotedPrice.value = booking.quotedPrice || '';
+    els.bookingNotes.value = booking.bookingNotes || '';
+    els.saveBookingBtn.textContent = 'Update Booking';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function deleteBooking(id) {
+    const confirmed = window.confirm('Delete this booking?');
+    if (!confirmed) return;
+
+    state.bookings = state.bookings.filter(item => item.id !== id);
+    saveState();
+    syncDashboardSchedule();
+    render();
+  }
+
+  function duplicateBooking(id) {
+    const booking = state.bookings.find(item => item.id === id);
+    if (!booking) return;
+
+    const copy = {
+      ...booking,
+      id: crypto.randomUUID ? crypto.randomUUID() : `booking_${Date.now()}`,
+      bookingStatus: 'Pending',
+      createdAt: new Date().toISOString()
+    };
+
+    state.bookings.push(copy);
+    saveState();
+    syncDashboardSchedule();
+    render();
+  }
+
+  function bookingsForDate(dateStr) {
+    return state.bookings
+      .filter(item => item.bookingDate === dateStr)
+      .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  }
+
+  function exportBookingToCalendar(booking) {
+    const start = combineDateTime(booking.bookingDate, booking.startTime || '09:00');
+    const end = combineDateTime(booking.bookingDate, booking.endTime || booking.startTime || '11:00');
+
+    if (!start || !end) {
+      alert('This booking needs a date and start time before it can be exported.');
+      return;
     }
 
-    function resetForm(){
-      state.editingId = null;
-      els.clientName.value = '';
-      els.propertyAddress.value = '';
-      els.serviceType.value = 'Standard Clean';
-      els.bookingStatus.value = 'Pending';
-      els.bookingDate.value = state.selectedDate || todayIso();
-      els.startTime.value = '';
-      els.endTime.value = '';
-      els.quotedPrice.value = '';
-      els.bookingNotes.value = '';
-      els.saveBookingBtn.textContent = 'Save Booking';
+    const descriptionLines = [
+      `Client: ${booking.clientName || ''}`,
+      `Service: ${booking.serviceType || ''}`,
+      `Status: ${booking.bookingStatus || ''}`,
+      `Quoted Price: ${booking.quotedPrice ? formatCurrency(booking.quotedPrice) : 'Not set'}`,
+      '',
+      booking.bookingNotes || ''
+    ];
+
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Spotless & Co//Job Booking Calendar//EN',
+      'BEGIN:VEVENT',
+      `UID:${booking.id}@spotlessco.local`,
+      `DTSTAMP:${toIcsDate(new Date())}`,
+      `DTSTART:${toIcsDate(start)}`,
+      `DTEND:${toIcsDate(end)}`,
+      `SUMMARY:${escapeIcsText(`${booking.serviceType || 'Cleaning Job'} - ${booking.clientName || 'Client'}`)}`,
+      `LOCATION:${escapeIcsText(booking.propertyAddress || '')}`,
+      `DESCRIPTION:${escapeIcsText(descriptionLines.join('\n'))}`,
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const safeName = `${booking.clientName || 'booking'}-${booking.bookingDate || 'event'}`
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+
+    link.href = url;
+    link.download = `${safeName || 'spotless-booking'}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function exportSelectedDate() {
+    const selectedBookings = bookingsForDate(state.selectedDate);
+
+    if (!selectedBookings.length) {
+      alert('There are no bookings on the selected date to export.');
+      return;
     }
 
-    function saveBooking(){
-      const booking = buildBookingFromForm();
-      const error = validateBooking(booking);
-      if(error){
-        alert(error);
-        return;
-      }
+    if (selectedBookings.length === 1) {
+      exportBookingToCalendar(selectedBookings[0]);
+      return;
+    }
 
-      const existingIndex = state.bookings.findIndex(item => item.id === booking.id);
-      if(existingIndex >= 0){
-        state.bookings[existingIndex] = { ...state.bookings[existingIndex], ...booking };
+    alert('There are multiple bookings on this date. Use the export button on the specific booking you want to send to the device calendar.');
+  }
+
+  function renderCalendar() {
+    els.monthTitle.textContent = getMonthName(state.currentMonth, state.currentYear);
+    els.calendarGrid.innerHTML = '';
+
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    dayNames.forEach(name => {
+      const el = document.createElement('div');
+      el.className = 'day-name';
+      el.textContent = name;
+      els.calendarGrid.appendChild(el);
+    });
+
+    const firstDay = new Date(state.currentYear, state.currentMonth, 1);
+    const startDay = firstDay.getDay();
+    const daysInMonth = new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(state.currentYear, state.currentMonth, 0).getDate();
+    const today = todayIso();
+
+    for (let i = 0; i < 42; i++) {
+      let dayNumber;
+      let cellDate;
+      let isOtherMonth = false;
+
+      if (i < startDay) {
+        dayNumber = daysInPrevMonth - startDay + i + 1;
+        const date = new Date(state.currentYear, state.currentMonth - 1, dayNumber);
+        cellDate = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        isOtherMonth = true;
+      } else if (i >= startDay + daysInMonth) {
+        dayNumber = i - (startDay + daysInMonth) + 1;
+        const date = new Date(state.currentYear, state.currentMonth + 1, dayNumber);
+        cellDate = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        isOtherMonth = true;
       } else {
-        state.bookings.push(booking);
+        dayNumber = i - startDay + 1;
+        cellDate = `${state.currentYear}-${pad(state.currentMonth + 1)}-${pad(dayNumber)}`;
       }
 
-      state.selectedDate = booking.bookingDate;
-      const selected = new Date(`${booking.bookingDate}T12:00:00`);
+      const dayCell = document.createElement('button');
+      dayCell.type = 'button';
+      dayCell.className = 'day-cell';
+
+      if (isOtherMonth) dayCell.classList.add('other-month');
+      if (cellDate === today) dayCell.classList.add('today');
+      if (cellDate === state.selectedDate) dayCell.classList.add('selected');
+
+      const number = document.createElement('div');
+      number.className = 'day-number';
+      number.textContent = dayNumber;
+      dayCell.appendChild(number);
+
+      const bookingsWrap = document.createElement('div');
+      bookingsWrap.className = 'day-bookings';
+
+      const dayBookings = bookingsForDate(cellDate);
+      dayBookings.slice(0, 2).forEach(booking => {
+        const chip = document.createElement('div');
+        chip.className = 'booking-chip';
+        chip.textContent = `${booking.startTime || ''} ${booking.clientName}`.trim();
+        bookingsWrap.appendChild(chip);
+      });
+
+      if (dayBookings.length > 2) {
+        const more = document.createElement('div');
+        more.className = 'booking-chip';
+        more.textContent = `+${dayBookings.length - 2} more`;
+        bookingsWrap.appendChild(more);
+      }
+
+      dayCell.appendChild(bookingsWrap);
+
+      dayCell.addEventListener('click', () => {
+        state.selectedDate = cellDate;
+        const selectedDateObj = new Date(`${cellDate}T12:00:00`);
+        state.currentMonth = selectedDateObj.getMonth();
+        state.currentYear = selectedDateObj.getFullYear();
+        els.bookingDate.value = cellDate;
+        saveState();
+        render();
+      });
+
+      els.calendarGrid.appendChild(dayCell);
+    }
+  }
+
+  function renderBookingList() {
+    els.bookingList.innerHTML = '';
+    const dayBookings = bookingsForDate(state.selectedDate);
+
+    if (!dayBookings.length) {
+      els.bookingList.innerHTML = '<div class="empty">No jobs booked on this date yet.</div>';
+      return;
+    }
+
+    dayBookings.forEach(booking => {
+      const fragment = els.bookingCardTemplate.content.cloneNode(true);
+      const title = fragment.querySelector('.booking-title');
+      const meta = fragment.querySelector('.booking-meta');
+      const notes = fragment.querySelector('.booking-notes');
+      const badge = fragment.querySelector('.status-badge');
+      const editBtn = fragment.querySelector('.edit-booking-btn');
+      const exportBtn = fragment.querySelector('.export-booking-btn');
+      const duplicateBtn = fragment.querySelector('.duplicate-booking-btn');
+      const deleteBtn = fragment.querySelector('.delete-booking-btn');
+
+      title.textContent = booking.clientName || 'Client';
+      meta.textContent = `${booking.serviceType || 'Cleaning Job'} • ${booking.startTime || ''}${booking.endTime ? ` - ${booking.endTime}` : ''} • ${booking.propertyAddress || 'No address'}${booking.quotedPrice ? ` • ${formatCurrency(booking.quotedPrice)}` : ''}`;
+      notes.textContent = booking.bookingNotes || 'No notes added for this booking.';
+      badge.textContent = booking.bookingStatus || 'Pending';
+      badge.className = 'status-badge';
+      badge.classList.add(`status-${(booking.bookingStatus || 'pending').toLowerCase()}`);
+
+      editBtn.addEventListener('click', () => editBooking(booking.id));
+      exportBtn.addEventListener('click', () => exportBookingToCalendar(booking));
+      duplicateBtn.addEventListener('click', () => duplicateBooking(booking.id));
+      deleteBtn.addEventListener('click', () => deleteBooking(booking.id));
+
+      els.bookingList.appendChild(fragment);
+    });
+  }
+
+  function updateSummary() {
+    const totalJobs = state.bookings.length;
+
+    const monthJobs = state.bookings.filter(item => {
+      if (!item.bookingDate) return false;
+      const [year, month] = item.bookingDate.split('-').map(Number);
+      return year === state.currentYear && (month - 1) === state.currentMonth;
+    }).length;
+
+    const selectedJobs = bookingsForDate(state.selectedDate).length;
+
+    els.summaryTotalJobs.textContent = totalJobs;
+    els.summaryMonthJobs.textContent = monthJobs;
+    els.summarySelectedDate.textContent = formatHumanDate(state.selectedDate);
+    els.summarySelectedJobs.textContent = selectedJobs;
+  }
+
+  function clearAllBookings() {
+    const confirmed = window.confirm('Clear all saved bookings from this device?');
+    if (!confirmed) return;
+
+    state = defaultState();
+    saveState();
+    syncDashboardSchedule();
+    resetForm();
+    render();
+  }
+
+  function render() {
+    renderCalendar();
+    renderBookingList();
+    updateSummary();
+  }
+
+  els.saveBookingBtn?.addEventListener('click', saveBooking);
+  els.resetFormBtn?.addEventListener('click', resetForm);
+  els.exportSelectedBtn?.addEventListener('click', exportSelectedDate);
+  els.clearAllBtn?.addEventListener('click', clearAllBookings);
+
+  els.prevMonthBtn?.addEventListener('click', () => {
+    state.currentMonth -= 1;
+    if (state.currentMonth < 0) {
+      state.currentMonth = 11;
+      state.currentYear -= 1;
+    }
+    saveState();
+    render();
+  });
+
+  els.nextMonthBtn?.addEventListener('click', () => {
+    state.currentMonth += 1;
+    if (state.currentMonth > 11) {
+      state.currentMonth = 0;
+      state.currentYear += 1;
+    }
+    saveState();
+    render();
+  });
+
+  els.bookingDate?.addEventListener('change', event => {
+    if (event.target.value) {
+      state.selectedDate = event.target.value;
+      const selected = new Date(`${event.target.value}T12:00:00`);
       state.currentMonth = selected.getMonth();
       state.currentYear = selected.getFullYear();
       saveState();
-      resetForm();
       render();
     }
+  });
 
-    function editBooking(id){
-      const booking = state.bookings.find(item => item.id === id);
-      if(!booking) return;
-      state.editingId = id;
-      els.clientName.value = booking.clientName || '';
-      els.propertyAddress.value = booking.propertyAddress || '';
-      els.serviceType.value = booking.serviceType || 'Standard Clean';
-      els.bookingStatus.value = booking.bookingStatus || 'Pending';
-      els.bookingDate.value = booking.bookingDate || '';
-      els.startTime.value = booking.startTime || '';
-      els.endTime.value = booking.endTime || '';
-      els.quotedPrice.value = booking.quotedPrice || '';
-      els.bookingNotes.value = booking.bookingNotes || '';
-      els.saveBookingBtn.textContent = 'Update Booking';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function deleteBooking(id){
-      const confirmed = window.confirm('Delete this booking?');
-      if(!confirmed) return;
-      state.bookings = state.bookings.filter(item => item.id !== id);
-      saveState();
-      render();
-    }
-
-    function duplicateBooking(id){
-      const booking = state.bookings.find(item => item.id === id);
-      if(!booking) return;
-      const copy = { ...booking, id: crypto.randomUUID(), bookingStatus: 'Pending', createdAt: new Date().toISOString() };
-      state.bookings.push(copy);
-      saveState();
-      render();
-    }
-
-    function bookingsForDate(dateStr){
-      return state.bookings
-        .filter(item => item.bookingDate === dateStr)
-        .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-    }
-
-    function exportBookingToCalendar(booking){
-      const start = combineDateTime(booking.bookingDate, booking.startTime || '09:00');
-      const end = combineDateTime(booking.bookingDate, booking.endTime || booking.startTime || '11:00');
-      if(!start || !end){
-        alert('This booking needs a date and start time before it can be exported.');
-        return;
-      }
-
-      const descriptionLines = [
-        `Client: ${booking.clientName || ''}`,
-        `Service: ${booking.serviceType || ''}`,
-        `Status: ${booking.bookingStatus || ''}`,
-        `Quoted Price: ${booking.quotedPrice ? formatCurrency(booking.quotedPrice) : 'Not set'}`,
-        '',
-        booking.bookingNotes || ''
-      ];
-
-      const ics = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//Spotless & Co//Job Booking Calendar//EN',
-        'BEGIN:VEVENT',
-        `UID:${booking.id}@spotlessco.local`,
-        `DTSTAMP:${toIcsDate(new Date())}`,
-        `DTSTART:${toIcsDate(start)}`,
-        `DTEND:${toIcsDate(end)}`,
-        `SUMMARY:${escapeIcsText(`${booking.serviceType || 'Cleaning Job'} - ${booking.clientName || 'Client'}`)}`,
-        `LOCATION:${escapeIcsText(booking.propertyAddress || '')}`,
-        `DESCRIPTION:${escapeIcsText(descriptionLines.join('\n'))}`,
-        'END:VEVENT',
-        'END:VCALENDAR'
-      ].join('\r\n');
-
-      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      const safeName = `${booking.clientName || 'booking'}-${booking.bookingDate || 'event'}`
-        .replace(/[^a-z0-9]+/gi, '-')
-        .replace(/^-+|-+$/g, '')
-        .toLowerCase();
-      link.href = url;
-      link.download = `${safeName || 'spotless-booking'}.ics`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-    }
-
-    function exportSelectedDate(){
-      const selectedBookings = bookingsForDate(state.selectedDate);
-      if(!selectedBookings.length){
-        alert('There are no bookings on the selected date to export.');
-        return;
-      }
-      if(selectedBookings.length === 1){
-        exportBookingToCalendar(selectedBookings[0]);
-        return;
-      }
-      alert('There are multiple bookings on this date. Use the export button on the specific booking you want to send to the device calendar.');
-    }
-
-    function renderCalendar(){
-      els.monthTitle.textContent = getMonthName(state.currentMonth, state.currentYear);
-      els.calendarGrid.innerHTML = '';
-
-      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      dayNames.forEach(name => {
-        const el = document.createElement('div');
-        el.className = 'day-name';
-        el.textContent = name;
-        els.calendarGrid.appendChild(el);
-      });
-
-      const firstDay = new Date(state.currentYear, state.currentMonth, 1);
-      const startDay = firstDay.getDay();
-      const daysInMonth = new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
-      const daysInPrevMonth = new Date(state.currentYear, state.currentMonth, 0).getDate();
-      const today = todayIso();
-
-      for(let i = 0; i < 42; i++){
-        let dayNumber;
-        let cellDate;
-        let isOtherMonth = false;
-
-        if(i < startDay){
-          dayNumber = daysInPrevMonth - startDay + i + 1;
-          const date = new Date(state.currentYear, state.currentMonth - 1, dayNumber);
-          cellDate = `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
-          isOtherMonth = true;
-        } else if(i >= startDay + daysInMonth){
-          dayNumber = i - (startDay + daysInMonth) + 1;
-          const date = new Date(state.currentYear, state.currentMonth + 1, dayNumber);
-          cellDate = `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
-          isOtherMonth = true;
-        } else {
-          dayNumber = i - startDay + 1;
-          cellDate = `${state.currentYear}-${pad(state.currentMonth + 1)}-${pad(dayNumber)}`;
-        }
-
-        const dayCell = document.createElement('button');
-        dayCell.type = 'button';
-        dayCell.className = 'day-cell';
-        if(isOtherMonth) dayCell.classList.add('other-month');
-        if(cellDate === today) dayCell.classList.add('today');
-        if(cellDate === state.selectedDate) dayCell.classList.add('selected');
-
-        const number = document.createElement('div');
-        number.className = 'day-number';
-        number.textContent = dayNumber;
-        dayCell.appendChild(number);
-
-        const bookingsWrap = document.createElement('div');
-        bookingsWrap.className = 'day-bookings';
-        const dayBookings = bookingsForDate(cellDate);
-        dayBookings.slice(0, 2).forEach(booking => {
-          const chip = document.createElement('div');
-          chip.className = 'booking-chip';
-          chip.textContent = `${booking.startTime || ''} ${booking.clientName}`.trim();
-          bookingsWrap.appendChild(chip);
-        });
-        if(dayBookings.length > 2){
-          const more = document.createElement('div');
-          more.className = 'booking-chip';
-          more.textContent = `+${dayBookings.length - 2} more`;
-          bookingsWrap.appendChild(more);
-        }
-        dayCell.appendChild(bookingsWrap);
-
-        dayCell.addEventListener('click', () => {
-          state.selectedDate = cellDate;
-          const selectedDateObj = new Date(`${cellDate}T12:00:00`);
-          state.currentMonth = selectedDateObj.getMonth();
-          state.currentYear = selectedDateObj.getFullYear();
-          els.bookingDate.value = cellDate;
-          saveState();
-          render();
-        });
-
-        els.calendarGrid.appendChild(dayCell);
-      }
-    }
-
-    function renderBookingList(){
-      els.bookingList.innerHTML = '';
-      const dayBookings = bookingsForDate(state.selectedDate);
-      if(!dayBookings.length){
-        els.bookingList.innerHTML = '<div class="empty">No jobs booked on this date yet.</div>';
-        return;
-      }
-
-      dayBookings.forEach(booking => {
-        const fragment = els.bookingCardTemplate.content.cloneNode(true);
-        const title = fragment.querySelector('.booking-title');
-        const meta = fragment.querySelector('.booking-meta');
-        const notes = fragment.querySelector('.booking-notes');
-        const badge = fragment.querySelector('.status-badge');
-        const editBtn = fragment.querySelector('.edit-booking-btn');
-        const exportBtn = fragment.querySelector('.export-booking-btn');
-        const duplicateBtn = fragment.querySelector('.duplicate-booking-btn');
-        const deleteBtn = fragment.querySelector('.delete-booking-btn');
-
-        title.textContent = booking.clientName || 'Client';
-        meta.textContent = `${booking.serviceType || 'Cleaning Job'} • ${booking.startTime || ''}${booking.endTime ? ` - ${booking.endTime}` : ''} • ${booking.propertyAddress || 'No address'}${booking.quotedPrice ? ` • ${formatCurrency(booking.quotedPrice)}` : ''}`;
-        notes.textContent = booking.bookingNotes || 'No notes added for this booking.';
-        badge.textContent = booking.bookingStatus || 'Pending';
-        badge.classList.add(`status-${(booking.bookingStatus || 'pending').toLowerCase()}`);
-
-        editBtn.addEventListener('click', () => editBooking(booking.id));
-        exportBtn.addEventListener('click', () => exportBookingToCalendar(booking));
-        duplicateBtn.addEventListener('click', () => duplicateBooking(booking.id));
-        deleteBtn.addEventListener('click', () => deleteBooking(booking.id));
-
-        els.bookingList.appendChild(fragment);
-      });
-    }
-
-    function updateSummary(){
-      const totalJobs = state.bookings.length;
-      const monthJobs = state.bookings.filter(item => {
-        if(!item.bookingDate) return false;
-        const [year, month] = item.bookingDate.split('-').map(Number);
-        return year === state.currentYear && (month - 1) === state.currentMonth;
-      }).length;
-      const selectedJobs = bookingsForDate(state.selectedDate).length;
-
-      els.summaryTotalJobs.textContent = totalJobs;
-      els.summaryMonthJobs.textContent = monthJobs;
-      els.summarySelectedDate.textContent = formatHumanDate(state.selectedDate);
-      els.summarySelectedJobs.textContent = selectedJobs;
-    }
-
-    function clearAllBookings(){
-      const confirmed = window.confirm('Clear all saved bookings from this device?');
-      if(!confirmed) return;
-      state = defaultState();
-      saveState();
-      resetForm();
-      render();
-    }
-
-    function render(){
-      renderCalendar();
-      renderBookingList();
-      updateSummary();
-    }
-
-    els.saveBookingBtn.addEventListener('click', saveBooking);
-    els.resetFormBtn.addEventListener('click', resetForm);
-    els.exportSelectedBtn.addEventListener('click', exportSelectedDate);
-    els.clearAllBtn.addEventListener('click', clearAllBookings);
-
-    els.prevMonthBtn.addEventListener('click', () => {
-      state.currentMonth -= 1;
-      if(state.currentMonth < 0){
-        state.currentMonth = 11;
-        state.currentYear -= 1;
-      }
-      saveState();
-      render();
-    });
-
-    els.nextMonthBtn.addEventListener('click', () => {
-      state.currentMonth += 1;
-      if(state.currentMonth > 11){
-        state.currentMonth = 0;
-        state.currentYear += 1;
-      }
-      saveState();
-      render();
-    });
-
-    els.bookingDate.addEventListener('change', event => {
-      if(event.target.value){
-        state.selectedDate = event.target.value;
-        const selected = new Date(`${event.target.value}T12:00:00`);
-        state.currentMonth = selected.getMonth();
-        state.currentYear = selected.getFullYear();
-        saveState();
-        render();
-      }
-    });
-
-   saveState();
-syncBookingToQuotePlanner(booking);
-resetForm();
-render();
-  </script>
+  syncDashboardSchedule();
+  resetForm();
+  render();
+</script>
 </body>
 </html>
