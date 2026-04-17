@@ -569,7 +569,7 @@
         <div class="topbar">
           <div class="welcome">
             <small>Dashboard</small>
-            <h2>Good morning, <span>Spotless</span></h2>
+            <h2 id="welcomeText">Good morning, <span>Spotless</span></h2>
           </div>
           <div class="top-actions">
             <a class="pill-btn secondary" href="Spotless Booking.html">Today’s Schedule</a>
@@ -801,6 +801,38 @@ function updateTodayAtGlance() {
 }
 
 document.addEventListener("DOMContentLoaded", updateTodayAtGlance);
+function getUserName() {
+  let name = localStorage.getItem("spotless_user_name");
+
+  if (!name) {
+    name = prompt("What should we call you?");
+    
+    if (name && name.trim() !== "") {
+      localStorage.setItem("spotless_user_name", name.trim());
+    } else {
+      name = "Spotless";
+    }
+  }
+
+  return name;
+}
+
+function setGreeting() {
+  const hour = new Date().getHours();
+
+  let greeting = "Hello";
+
+  if (hour < 12) greeting = "Good morning";
+  else if (hour < 18) greeting = "Good afternoon";
+  else greeting = "Good evening";
+
+  const name = getUserName();
+
+  document.getElementById("welcomeText").innerHTML =
+    `${greeting}, <span>${name}</span>`;
+}
+
+document.addEventListener("DOMContentLoaded", setGreeting);
 </script>
 </body>
 </html>
