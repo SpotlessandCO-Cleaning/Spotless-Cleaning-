@@ -516,9 +516,13 @@
       </div>
 
       <div class="toolbar" style="margin-top:14px;">
-        <button class="btn btn-primary" id="importSampleBtn">Load Last Saved Job</button>
-        <button class="btn btn-soft" id="clearAllBtn">Clear All</button>
-      </div>
+  <button class="btn btn-primary" id="importSampleBtn">Load Last Saved Job</button>
+  <button class="btn btn-soft" id="sharePdfBtn">Share PDF</button>
+</div>
+<div class="toolbar" style="margin-top:10px;">
+  <button class="btn btn-soft" id="clearAllBtn">Clear All</button>
+  <div></div>
+</div>
 
       <div class="quote-strip">Import the CSV exported from the quote page. The checklist builder reads each room and converts the room details into individual tasks automatically.</div>
     </section>
@@ -607,22 +611,23 @@
       </div>
     </article>
   </template>
-
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script>
     const STORAGE_KEY = 'spotless_co_checklist_from_quote_v1';
 
-    const els = {
-      csvFile: document.getElementById('csvFile'),
-      jobStatus: document.getElementById('jobStatus'),
-      importSampleBtn: document.getElementById('importSampleBtn'),
-      clearAllBtn: document.getElementById('clearAllBtn'),
-      summaryJobName: document.getElementById('summaryJobName'),
-      summaryAddress: document.getElementById('summaryAddress'),
-      summaryRooms: document.getElementById('summaryRooms'),
-      summaryCompletion: document.getElementById('summaryCompletion'),
-      roomsContainer: document.getElementById('roomsContainer'),
-      roomTemplate: document.getElementById('roomTemplate')
-    };
+   const els = {
+  csvFile: document.getElementById('csvFile'),
+  jobStatus: document.getElementById('jobStatus'),
+  importSampleBtn: document.getElementById('importSampleBtn'),
+  clearAllBtn: document.getElementById('clearAllBtn'),
+  sharePdfBtn: document.getElementById('sharePdfBtn'),
+  summaryJobName: document.getElementById('summaryJobName'),
+  summaryAddress: document.getElementById('summaryAddress'),
+  summaryRooms: document.getElementById('summaryRooms'),
+  summaryCompletion: document.getElementById('summaryCompletion'),
+  roomsContainer: document.getElementById('roomsContainer'),
+  roomTemplate: document.getElementById('roomTemplate')
+};
 
     function defaultState(){
       return {
@@ -867,7 +872,142 @@
         reader.readAsDataURL(file);
       });
     }
+function getChecklistStats(){
+  const totalTasks = state.rooms.reduce((sum, room) => sum + room.tasks.length, 0);
+  const completedTasks = state.rooms.reduce((sum, room) => {
+    return sum + room.tasks.filter(task => task.done).length;
+  }, 0);
+  const completion = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
+  return { totalTasks, completedTasks, completion };
+}
+
+function safeFileName(value){
+  return String(value || 'checklist')
+    .trim()
+    .replace(/[^\w\-]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'checklist';
+}
+
+function buildShareLines(){
+  const { totalTasks, completedTasks, completion } = getChecklistStats();
+  const lines = [];
+
+  lines.push('Spotless & Co Cleaning Checklist');
+  lines.push('');
+  lines.push(`Client / Job Name: ${state.jobName || 'Not provided'}`);
+  lines.push(`Address / Location: ${state.jobAddress || 'Not provided'}`);
+  lines.push(`Job Status: ${state.jobStatus || 'Not Started'}`);
+  lines.push(`Rooms: ${state.rooms.length}`);
+  lines.push(`Completed Tasks: ${completedTasks} of ${totalTasks}`);
+  lines.push(`Completion: ${completion}%`);
+  lines.push('');
+  lines.push('Room Summary');
+  lines.push('----------------------------------------');
+
+  state.rooms.forEach((room, roomIndex) => {
+    const roomDone = room.tasks.filter(task => task.done).length;
+    const roomTotal = room.tasks.length;
+    const roomPercent = roomTotal ? Math.round((roomDone / roomTotal) * 100) : 0;
+
+    lines.push('');
+    lines.push(`${roomIndex + 1}. ${room.roomName}`);
+    lines.push(`Type: ${room.cleaningType || 'Not specified'}`);
+    lines.push(`Estimated Time: ${room.estimatedTime || 0} min`);
+    lines.push(`Progress: ${roomDone}/${roomTotal} (${roomPercent}%)`);
+    lines.push('Tasks:');
+
+    room.tasks.forEach(task => {
+      lines.push(`  ${task.done ? '[x]' : '[ ]'} ${task.text}`);
+    });
+
+    if(room.notes && room.notes.trim()){
+      lines.push('Notes:');
+      room.notes
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .forEach(line => lines.push(`  - ${line}`));
+    }
+  });
+
+  return lines;
+}
+
+function addWrappedText(doc, text, x, y, maxWidth, lineHeight){
+  const lines = doc.splitTextToSize(text, maxWidth);
+  lines.forEach(line => {
+    if(y > 280){
+      doc.addPage();
+      y = 20;
+    }
+    doc.text(line, x, y);
+    y += lineHeight;
+  });
+  return y;
+}
+
+async function generateChecklistPdfBlob(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  const margin = 15;
+  const pageWidth = 210;
+  const usableWidth = pageWidth - (margin * 2);
+  let y = 18;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('Spotless & Co Cleaning Checklist', margin, y);
+  y += 10;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+
+  const lines = buildShareLines();
+  for(const line of lines){
+    y = addWrappedText(doc, line, margin, y, usableWidth, 6);
+  }
+
+  const blob = doc.output('blob');
+  return blob;
+}
+
+async function shareChecklistPdf(){
+  if(!state.rooms.length){
+    alert('Load a checklist before sharing.');
+    return;
+  }
+
+  try{
+    const blob = await generateChecklistPdfBlob();
+    const fileName = `${safeFileName(state.jobName || 'cleaning_checklist')}.pdf`;
+    const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
+
+    if(navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })){
+      await navigator.share({
+        title: state.jobName || 'Cleaning Checklist',
+        text: 'Cleaning checklist PDF',
+        files: [pdfFile]
+      });
+      return;
+    }
+
+    const url = URL.createObjectURL(pdfFile);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+    alert('Sharing is not supported on this device/browser, so the PDF was downloaded instead.');
+  }catch(error){
+    console.error('PDF share failed:', error);
+    alert('Unable to create or share the PDF.');
+  }
+}
     function render(){
       els.roomsContainer.innerHTML = '';
 
@@ -990,6 +1130,7 @@
     });
 
     els.clearAllBtn.addEventListener('click', clearAll);
+	  els.sharePdfBtn.addEventListener('click', shareChecklistPdf);
 
     render();
   </script>
