@@ -654,6 +654,21 @@ function prefillFromQuotePlanner() {
   }
 }
 
+    function syncBookingToQuotePlanner(booking) {
+  try {
+    const key = 'spotless_co_cleaning_quote_planner_v4';
+
+    const quote = JSON.parse(localStorage.getItem(key)) || {};
+
+    quote.clientName = booking.clientName || quote.clientName || '';
+    quote.jobName = booking.clientName || quote.jobName || '';
+    quote.jobAddress = booking.propertyAddress || quote.jobAddress || '';
+
+    localStorage.setItem(key, JSON.stringify(quote));
+  } catch (error) {
+    console.error('Failed syncing booking to quote planner:', error);
+  }
+}
     function todayIso(){
       const now = new Date();
       const y = now.getFullYear();
@@ -1087,8 +1102,9 @@ function prefillFromQuotePlanner() {
       }
     });
 
-    resetForm();
-prefillFromQuotePlanner();
+   saveState();
+syncBookingToQuotePlanner(booking);
+resetForm();
 render();
   </script>
 </body>
