@@ -614,24 +614,28 @@
             <h4>Today at a glance</h4>
             <p>A simple, elegant summary card for your team’s workflow and daily priorities.</p>
             <div class="stat-grid">
-              <div class="stat">
-                <strong>08</strong>
-                <span>Jobs Scheduled</span>
-              </div>
-              <div class="stat">
-                <strong>03</strong>
-                <span>Quotes Pending</span>
-              </div>
-              <div class="stat">
-                <strong>14</strong>
-                <span>Checklist Items</span>
-              </div>
-              <div class="stat">
-                <strong>96%</strong>
-                <span>Completion Rate</span>
-              </div>
-            </div>
-          </div>
+
+  <div class="stat">
+    <strong id="jobsCount">0</strong>
+    <span>Jobs Scheduled</span>
+  </div>
+
+  <div class="stat">
+    <strong id="quotesCount">0</strong>
+    <span>Quotes Pending</span>
+  </div>
+
+  <div class="stat">
+    <strong id="taskCount">0</strong>
+    <span>Checklist Items</span>
+  </div>
+
+  <div class="stat">
+    <strong id="completionRate">0%</strong>
+    <span>Completion Rate</span>
+  </div>
+
+</div>
         </section>
 
         <section class="cards-row">
@@ -747,6 +751,56 @@ document.addEventListener("DOMContentLoaded", () => {
   renderChecklistPreview();
   renderSchedulePreview();
 });
+  
+function getData(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function updateTodayAtGlance() {
+
+  const schedule = getData("spotless_schedule");
+  const checklist = getData("spotless_checklist");
+  const quotes = getData("spotless_quotes");
+
+  // JOBS TODAY
+  const today = new Date().toLocaleDateString();
+
+  const jobsToday = schedule.filter(job =>
+    job.date === today
+  ).length;
+
+  // PENDING QUOTES
+  const pendingQuotes = quotes.filter(q =>
+    q.status === "Pending" || q.status === "Draft"
+  ).length;
+
+  // CHECKLIST TASKS
+  const incompleteTasks = checklist.filter(task =>
+    task.status !== "Done"
+  ).length;
+
+  // COMPLETION %
+  const completed = checklist.filter(task =>
+    task.status === "Done"
+  ).length;
+
+  const total = checklist.length;
+
+  const percent = total
+    ? Math.round((completed / total) * 100)
+    : 0;
+
+  document.getElementById("jobsCount").textContent = jobsToday;
+  document.getElementById("quotesCount").textContent = pendingQuotes;
+  document.getElementById("taskCount").textContent = incompleteTasks;
+  document.getElementById("completionRate").textContent = percent + "%";
+}
+
+document.addEventListener("DOMContentLoaded", updateTodayAtGlance);
 </script>
 </body>
 </html>
