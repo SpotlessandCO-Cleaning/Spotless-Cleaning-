@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Spotless & Co Job Booking Calendar</title>
+  <style>
+    :root{
+      --bg:#f5f1ea;
+      --sand:#efe6da;
+      --cream:#fcfaf7;
+      --ink:#2f2a26;
+      --muted:#776b61;
+      --line:#dccfbe;
+      --gold:#c8a977;
+      --gold-deep:#b28f57;
+      --forest:#31443a;
+      --forest-soft:#42584c;
+      --danger:#b85c5c;
+      --success:#3f7d57;
+      --shadow:0 16px 38px rgba(58,42,24,.10);
+      --radius-xl:28px;
+      --radius-lg:20px;
+      --radius-md:16px;
+    }
+
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+    html,body{
+      margin:0;
+      padding:0;
+      background:linear-gradient(180deg,var(--bg) 0%, #fbf8f4 100%);
+      color:var(--ink);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    }
+
+    body{min-height:100vh;}
+
+    .shell{
+      width:min(100%, 980px);
+      margin:0 auto;
+      padding:16px 14px 34px;
+    }
+
+    .hero{
+      position:relative;
+      overflow:hidden;
+      background:linear-gradient(145deg, rgba(200,169,119,.20), rgba(255,255,255,.72));
+      border:1px solid rgba(200,169,119,.35);
+      border-radius:32px;
+      padding:22px 18px;
+      box-shadow:var(--shadow);
+      margin-bottom:14px;
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:auto -40px -50px auto;
+      width:160px;
+      height:160px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(200,169,119,.25), transparent 68%);
+      pointer-events:none;
+    }
+
+    .brand-row{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      position:relative;
+      z-index:1;
+    }
+
+    .brand-mark{
+      width:54px;
+      height:54px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(145deg,var(--forest),var(--forest-soft));
+      color:#fff;
+      font-size:1.4rem;
+      font-weight:800;
+      letter-spacing:.04em;
+      box-shadow:0 12px 24px rgba(49,68,58,.18);
+      flex:0 0 auto;
+    }
+
+    .eyebrow{
+      margin:0 0 4px;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      font-size:.72rem;
+      color:var(--gold-deep);
+      font-weight:800;
+    }
+
+    h1{
+      margin:0;
+      font-size:1.42rem;
+      line-height:1.12;
+      letter-spacing:-.02em;
+    }
+
+    .hero-copy{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-size:.96rem;
+      line-height:1.5;
+      max-width:52ch;
+      position:relative;
+      z-index:1;
+    }
+
+    .layout{
+      display:grid;
+      gap:14px;
+    }
+
+    .card{
+      background:rgba(252,250,247,.95);
+      border:1px solid var(--line);
+      border-radius:var(--radius-xl);
+      padding:14px;
+      box-shadow:var(--shadow);
+    }
+
+    .card-title{
+      margin:0 0 12px;
+      font-size:1rem;
+      font-weight:800;
+      letter-spacing:-.01em;
+    }
+
+    .grid{display:grid;gap:12px;}
+    .field{display:flex;flex-direction:column;gap:7px;}
+
+    label{
+      font-size:.88rem;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    input,select,textarea{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:16px;
+      padding:14px;
+      font-size:16px;
+      outline:none;
+      transition:border-color .2s ease, box-shadow .2s ease;
+      appearance:none;
+    }
+
+    textarea{min-height:92px;resize:vertical;}
+
+    input:focus,select:focus,textarea:focus{
+      border-color:var(--gold);
+      box-shadow:0 0 0 4px rgba(200,169,119,.16);
+    }
+
+    .toolbar,
+    .quick-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .btn{
+      border:none;
+      border-radius:18px;
+      padding:14px;
+      min-height:52px;
+      font-size:.96rem;
+      font-weight:800;
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .2s ease, opacity .2s ease;
+    }
+
+    .btn:active{transform:scale(.98);}
+
+    .btn-primary{
+      color:#fff;
+      background:linear-gradient(145deg,var(--forest),var(--forest-soft));
+      box-shadow:0 10px 20px rgba(49,68,58,.14);
+    }
+
+    .btn-accent{
+      color:#48351d;
+      background:linear-gradient(145deg,#e1c79d,var(--gold));
+      box-shadow:0 10px 20px rgba(200,169,119,.18);
+    }
+
+    .btn-soft{
+      color:var(--ink);
+      background:#fff;
+      border:1px solid var(--line);
+    }
+
+    .btn-danger{
+      color:#fff;
+      background:linear-gradient(145deg,#c97474,var(--danger));
+    }
+
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .pill{
+      background:linear-gradient(180deg,#fff 0%, #f9f5ef 100%);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+    }
+
+    .pill-label{
+      color:var(--muted);
+      font-size:.8rem;
+      margin-bottom:4px;
+      font-weight:700;
+    }
+
+    .pill-value{
+      font-size:1.05rem;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .calendar-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .month-title{
+      margin:0;
+      font-size:1.08rem;
+      font-weight:800;
+      text-align:center;
+      flex:1;
+    }
+
+    .icon-btn{
+      width:42px;
+      height:42px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:1.1rem;
+      font-weight:800;
+      cursor:pointer;
+      color:var(--ink);
+    }
+
+    .calendar-grid{
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:8px;
+    }
+
+    .day-name{
+      text-align:center;
+      font-size:.78rem;
+      color:var(--muted);
+      font-weight:800;
+      padding:6px 2px;
+    }
+
+    .day-cell{
+      min-height:84px;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:16px;
+      padding:8px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      position:relative;
+      cursor:pointer;
+    }
+
+    .day-cell.other-month{
+      opacity:.45;
+      background:#faf8f4;
+    }
+
+    .day-cell.today{
+      border-color:var(--gold-deep);
+      box-shadow:0 0 0 2px rgba(200,169,119,.18) inset;
+    }
+
+    .day-cell.selected{
+      border-color:var(--forest);
+      box-shadow:0 0 0 2px rgba(49,68,58,.16) inset;
+    }
+
+    .day-number{
+      font-size:.86rem;
+      font-weight:800;
+    }
+
+    .day-bookings{
+      display:grid;
+      gap:4px;
+      overflow:hidden;
+    }
+
+    .booking-chip{
+      font-size:.7rem;
+      line-height:1.2;
+      border-radius:999px;
+      padding:4px 8px;
+      background:linear-gradient(145deg,#f0ddbc,var(--gold));
+      color:#4f3820;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      font-weight:800;
+    }
+
+    .booking-list{
+      display:grid;
+      gap:12px;
+    }
+
+    .booking-card{
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:linear-gradient(180deg,#fff 0%, #faf6f0 100%);
+      padding:14px;
+    }
+
+    .booking-card-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+    }
+
+    .booking-title{
+      margin:0;
+      font-size:1rem;
+      font-weight:800;
+    }
+
+    .booking-meta{
+      margin:5px 0 0;
+      color:var(--muted);
+      font-size:.9rem;
+      line-height:1.45;
+    }
+
+    .status-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:34px;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:.84rem;
+      font-weight:800;
+      background:#fff;
+      border:1px solid var(--line);
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .status-confirmed{background:linear-gradient(145deg,#4f9a6b,var(--success));color:#fff;border-color:transparent;}
+    .status-pending{background:linear-gradient(145deg,#f0ddbc,var(--gold));color:#4f3820;border-color:transparent;}
+    .status-completed{background:linear-gradient(145deg,#31443a,var(--forest));color:#fff;border-color:transparent;}
+
+    .booking-notes{
+      color:var(--ink);
+      font-size:.92rem;
+      line-height:1.5;
+      margin:0 0 12px;
+      white-space:pre-wrap;
+    }
+
+    .booking-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      padding:18px 12px;
+      border-radius:20px;
+      border:1px dashed var(--line);
+      background:#fffcf8;
+    }
+
+    .footer-note{
+      margin-top:12px;
+      text-align:center;
+      color:var(--muted);
+      font-size:.82rem;
+      line-height:1.45;
+    }
+
+    @media (min-width: 900px){
+      .layout{
+        grid-template-columns:380px 1fr;
+        align-items:start;
+      }
+      .shell{padding:22px 18px 40px;}
+      .card{padding:18px;}
+      .summary{grid-template-columns:repeat(4,1fr);}
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="brand-row">
+        <div class="brand-mark">S</div>
+        <div>
+          <p class="eyebrow">Spotless &amp; Co</p>
+          <h1>Job Booking Calendar</h1>
+        </div>
+      </div>
+      <p class="hero-copy">Book cleaning jobs, keep them saved on the device, review them by date, and export each booking to the device calendar app using a standard calendar event file.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Booking Overview</h2>
+      <div class="summary">
+        <div class="pill">
+          <div class="pill-label">Total Jobs</div>
+          <div class="pill-value" id="summaryTotalJobs">0</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">This Month</div>
+          <div class="pill-value" id="summaryMonthJobs">0</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Selected Date</div>
+          <div class="pill-value" id="summarySelectedDate">Not selected</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Jobs On Date</div>
+          <div class="pill-value" id="summarySelectedJobs">0</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="card">
+        <h2 class="card-title">Add / Edit Booking</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="clientName">Client Name</label>
+            <input id="clientName" type="text" placeholder="Enter client name" />
+          </div>
+          <div class="field">
+            <label for="propertyAddress">Property Address</label>
+            <input id="propertyAddress" type="text" placeholder="Enter property address" />
+          </div>
+          <div class="field">
+            <label for="serviceType">Service Type</label>
+            <select id="serviceType">
+              <option value="Standard Clean">Standard Clean</option>
+              <option value="Deep Clean">Deep Clean</option>
+              <option value="Move In / Move Out">Move In / Move Out</option>
+              <option value="Post Construction">Post Construction</option>
+              <option value="Commercial Clean">Commercial Clean</option>
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bookingStatus">Booking Status</label>
+            <select id="bookingStatus">
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bookingDate">Date</label>
+            <input id="bookingDate" type="date" />
+          </div>
+          <div class="field">
+            <label for="startTime">Start Time</label>
+            <input id="startTime" type="time" />
+          </div>
+          <div class="field">
+            <label for="endTime">End Time</label>
+            <input id="endTime" type="time" />
+          </div>
+          <div class="field">
+            <label for="quotedPrice">Quoted Price</label>
+            <input id="quotedPrice" type="number" min="0" step="0.01" placeholder="Enter quoted total" />
+          </div>
+          <div class="field">
+            <label for="bookingNotes">Notes</label>
+            <textarea id="bookingNotes" placeholder="Access info, cleaner assigned, special requests, reminders, or supplies needed"></textarea>
+          </div>
+        </div>
+
+        <div class="quick-actions" style="margin-top:14px;">
+          <button class="btn btn-primary" id="saveBookingBtn">Save Booking</button>
+          <button class="btn btn-soft" id="resetFormBtn">Reset Form</button>
+        </div>
+        <div class="quick-actions" style="margin-top:10px;">
+          <button class="btn btn-accent" id="exportSelectedBtn">Export Selected to Calendar</button>
+          <button class="btn btn-danger" id="clearAllBtn">Clear All Bookings</button>
+        </div>
+        <p class="footer-note">Calendar export downloads an .ics file that can be opened by most device calendar apps.</p>
+      </section>
+
+      <section class="grid">
+        <section class="card">
+          <div class="calendar-head">
+            <button class="icon-btn" id="prevMonthBtn" type="button">‹</button>
+            <h2 class="month-title" id="monthTitle">Month Year</h2>
+            <button class="icon-btn" id="nextMonthBtn" type="button">›</button>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </section>
+
+        <section class="card">
+          <h2 class="card-title">Bookings for Selected Date</h2>
+          <div id="bookingList" class="booking-list"></div>
+        </section>
+      </section>
+    </div>
+  </div>
+
+  <template id="bookingCardTemplate">
+    <article class="booking-card">
+      <div class="booking-card-head">
+        <div>
+          <h3 class="booking-title">Client</h3>
+          <p class="booking-meta"></p>
+        </div>
+        <div class="status-badge">Pending</div>
+      </div>
+      <p class="booking-notes"></p>
+      <div class="booking-actions">
+        <button class="btn btn-soft edit-booking-btn" type="button">Edit</button>
+        <button class="btn btn-accent export-booking-btn" type="button">Export to Calendar</button>
+      </div>
+      <div class="booking-actions" style="margin-top:10px;">
+        <button class="btn btn-soft duplicate-booking-btn" type="button">Duplicate</button>
+        <button class="btn btn-danger delete-booking-btn" type="button">Delete</button>
+      </div>
+    </article>
+  </template>
+
+  <script>
+    const STORAGE_KEY = 'spotless_co_job_booking_calendar_v1';
+
+    const els = {
+      clientName: document.getElementById('clientName'),
+      propertyAddress: document.getElementById('propertyAddress'),
+      serviceType: document.getElementById('serviceType'),
+      bookingStatus: document.getElementById('bookingStatus'),
+      bookingDate: document.getElementById('bookingDate'),
+      startTime: document.getElementById('startTime'),
+      endTime: document.getElementById('endTime'),
+      quotedPrice: document.getElementById('quotedPrice'),
+      bookingNotes: document.getElementById('bookingNotes'),
+      saveBookingBtn: document.getElementById('saveBookingBtn'),
+      resetFormBtn: document.getElementById('resetFormBtn'),
+      exportSelectedBtn: document.getElementById('exportSelectedBtn'),
+      clearAllBtn: document.getElementById('clearAllBtn'),
+      prevMonthBtn: document.getElementById('prevMonthBtn'),
+      nextMonthBtn: document.getElementById('nextMonthBtn'),
+      monthTitle: document.getElementById('monthTitle'),
+      calendarGrid: document.getElementById('calendarGrid'),
+      bookingList: document.getElementById('bookingList'),
+      bookingCardTemplate: document.getElementById('bookingCardTemplate'),
+      summaryTotalJobs: document.getElementById('summaryTotalJobs'),
+      summaryMonthJobs: document.getElementById('summaryMonthJobs'),
+      summarySelectedDate: document.getElementById('summarySelectedDate'),
+      summarySelectedJobs: document.getElementById('summarySelectedJobs')
+    };
+
+    function todayIso(){
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function defaultState(){
+      const today = new Date();
+      return {
+        bookings: [],
+        selectedDate: todayIso(),
+        currentMonth: today.getMonth(),
+        currentYear: today.getFullYear(),
+        editingId: null
+      };
+    }
+
+    function loadState(){
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return defaultState();
+        const parsed = JSON.parse(raw);
+        return {
+          bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [],
+          selectedDate: parsed.selectedDate || todayIso(),
+          currentMonth: Number.isInteger(parsed.currentMonth) ? parsed.currentMonth : new Date().getMonth(),
+          currentYear: Number.isInteger(parsed.currentYear) ? parsed.currentYear : new Date().getFullYear(),
+          editingId: null
+        };
+      } catch (error) {
+        console.error('Failed to load booking data:', error);
+        return defaultState();
+      }
+    }
+
+    let state = loadState();
+
+    function saveState(){
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          bookings: state.bookings,
+          selectedDate: state.selectedDate,
+          currentMonth: state.currentMonth,
+          currentYear: state.currentYear
+        }));
+      } catch (error) {
+        console.error('Failed to save booking data:', error);
+      }
+    }
+
+    function formatCurrency(value){
+      const amount = parseFloat(value);
+      return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(Number.isFinite(amount) ? amount : 0);
+    }
+
+    function formatHumanDate(dateStr){
+      if(!dateStr) return 'Not selected';
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      return new Intl.DateTimeFormat('en-CA', { month: 'long', day: 'numeric', year: 'numeric' }).format(date);
+    }
+
+    function getMonthName(month, year){
+      return new Intl.DateTimeFormat('en-CA', { month: 'long', year: 'numeric' }).format(new Date(year, month, 1));
+    }
+
+    function combineDateTime(dateStr, timeStr){
+      if(!dateStr) return null;
+      return new Date(`${dateStr}T${timeStr || '09:00'}:00`);
+    }
+
+    function pad(num){
+      return String(num).padStart(2, '0');
+    }
+
+    function toIcsDate(date){
+      return `${date.getUTCFullYear()}${pad(date.getUTCMonth()+1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+    }
+
+    function escapeIcsText(text){
+      return String(text || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/\n/g, '\\n')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;');
+    }
+
+    function buildBookingFromForm(){
+      return {
+        id: state.editingId || crypto.randomUUID(),
+        clientName: els.clientName.value.trim(),
+        propertyAddress: els.propertyAddress.value.trim(),
+        serviceType: els.serviceType.value,
+        bookingStatus: els.bookingStatus.value,
+        bookingDate: els.bookingDate.value,
+        startTime: els.startTime.value,
+        endTime: els.endTime.value,
+        quotedPrice: els.quotedPrice.value,
+        bookingNotes: els.bookingNotes.value.trim(),
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    function validateBooking(booking){
+      if(!booking.clientName) return 'Please enter the client name.';
+      if(!booking.bookingDate) return 'Please select a booking date.';
+      if(!booking.startTime) return 'Please select a start time.';
+      if(booking.endTime && booking.endTime <= booking.startTime) return 'End time must be after the start time.';
+      return '';
+    }
+
+    function resetForm(){
+      state.editingId = null;
+      els.clientName.value = '';
+      els.propertyAddress.value = '';
+      els.serviceType.value = 'Standard Clean';
+      els.bookingStatus.value = 'Pending';
+      els.bookingDate.value = state.selectedDate || todayIso();
+      els.startTime.value = '';
+      els.endTime.value = '';
+      els.quotedPrice.value = '';
+      els.bookingNotes.value = '';
+      els.saveBookingBtn.textContent = 'Save Booking';
+    }
+
+    function saveBooking(){
+      const booking = buildBookingFromForm();
+      const error = validateBooking(booking);
+      if(error){
+        alert(error);
+        return;
+      }
+
+      const existingIndex = state.bookings.findIndex(item => item.id === booking.id);
+      if(existingIndex >= 0){
+        state.bookings[existingIndex] = { ...state.bookings[existingIndex], ...booking };
+      } else {
+        state.bookings.push(booking);
+      }
+
+      state.selectedDate = booking.bookingDate;
+      const selected = new Date(`${booking.bookingDate}T12:00:00`);
+      state.currentMonth = selected.getMonth();
+      state.currentYear = selected.getFullYear();
+      saveState();
+      resetForm();
+      render();
+    }
+
+    function editBooking(id){
+      const booking = state.bookings.find(item => item.id === id);
+      if(!booking) return;
+      state.editingId = id;
+      els.clientName.value = booking.clientName || '';
+      els.propertyAddress.value = booking.propertyAddress || '';
+      els.serviceType.value = booking.serviceType || 'Standard Clean';
+      els.bookingStatus.value = booking.bookingStatus || 'Pending';
+      els.bookingDate.value = booking.bookingDate || '';
+      els.startTime.value = booking.startTime || '';
+      els.endTime.value = booking.endTime || '';
+      els.quotedPrice.value = booking.quotedPrice || '';
+      els.bookingNotes.value = booking.bookingNotes || '';
+      els.saveBookingBtn.textContent = 'Update Booking';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteBooking(id){
+      const confirmed = window.confirm('Delete this booking?');
+      if(!confirmed) return;
+      state.bookings = state.bookings.filter(item => item.id !== id);
+      saveState();
+      render();
+    }
+
+    function duplicateBooking(id){
+      const booking = state.bookings.find(item => item.id === id);
+      if(!booking) return;
+      const copy = { ...booking, id: crypto.randomUUID(), bookingStatus: 'Pending', createdAt: new Date().toISOString() };
+      state.bookings.push(copy);
+      saveState();
+      render();
+    }
+
+    function bookingsForDate(dateStr){
+      return state.bookings
+        .filter(item => item.bookingDate === dateStr)
+        .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+    }
+
+    function exportBookingToCalendar(booking){
+      const start = combineDateTime(booking.bookingDate, booking.startTime || '09:00');
+      const end = combineDateTime(booking.bookingDate, booking.endTime || booking.startTime || '11:00');
+      if(!start || !end){
+        alert('This booking needs a date and start time before it can be exported.');
+        return;
+      }
+
+      const descriptionLines = [
+        `Client: ${booking.clientName || ''}`,
+        `Service: ${booking.serviceType || ''}`,
+        `Status: ${booking.bookingStatus || ''}`,
+        `Quoted Price: ${booking.quotedPrice ? formatCurrency(booking.quotedPrice) : 'Not set'}`,
+        '',
+        booking.bookingNotes || ''
+      ];
+
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Spotless & Co//Job Booking Calendar//EN',
+        'BEGIN:VEVENT',
+        `UID:${booking.id}@spotlessco.local`,
+        `DTSTAMP:${toIcsDate(new Date())}`,
+        `DTSTART:${toIcsDate(start)}`,
+        `DTEND:${toIcsDate(end)}`,
+        `SUMMARY:${escapeIcsText(`${booking.serviceType || 'Cleaning Job'} - ${booking.clientName || 'Client'}`)}`,
+        `LOCATION:${escapeIcsText(booking.propertyAddress || '')}`,
+        `DESCRIPTION:${escapeIcsText(descriptionLines.join('\n'))}`,
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].join('\r\n');
+
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeName = `${booking.clientName || 'booking'}-${booking.bookingDate || 'event'}`
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .toLowerCase();
+      link.href = url;
+      link.download = `${safeName || 'spotless-booking'}.ics`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    function exportSelectedDate(){
+      const selectedBookings = bookingsForDate(state.selectedDate);
+      if(!selectedBookings.length){
+        alert('There are no bookings on the selected date to export.');
+        return;
+      }
+      if(selectedBookings.length === 1){
+        exportBookingToCalendar(selectedBookings[0]);
+        return;
+      }
+      alert('There are multiple bookings on this date. Use the export button on the specific booking you want to send to the device calendar.');
+    }
+
+    function renderCalendar(){
+      els.monthTitle.textContent = getMonthName(state.currentMonth, state.currentYear);
+      els.calendarGrid.innerHTML = '';
+
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      dayNames.forEach(name => {
+        const el = document.createElement('div');
+        el.className = 'day-name';
+        el.textContent = name;
+        els.calendarGrid.appendChild(el);
+      });
+
+      const firstDay = new Date(state.currentYear, state.currentMonth, 1);
+      const startDay = firstDay.getDay();
+      const daysInMonth = new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
+      const daysInPrevMonth = new Date(state.currentYear, state.currentMonth, 0).getDate();
+      const today = todayIso();
+
+      for(let i = 0; i < 42; i++){
+        let dayNumber;
+        let cellDate;
+        let isOtherMonth = false;
+
+        if(i < startDay){
+          dayNumber = daysInPrevMonth - startDay + i + 1;
+          const date = new Date(state.currentYear, state.currentMonth - 1, dayNumber);
+          cellDate = `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+          isOtherMonth = true;
+        } else if(i >= startDay + daysInMonth){
+          dayNumber = i - (startDay + daysInMonth) + 1;
+          const date = new Date(state.currentYear, state.currentMonth + 1, dayNumber);
+          cellDate = `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+          isOtherMonth = true;
+        } else {
+          dayNumber = i - startDay + 1;
+          cellDate = `${state.currentYear}-${pad(state.currentMonth + 1)}-${pad(dayNumber)}`;
+        }
+
+        const dayCell = document.createElement('button');
+        dayCell.type = 'button';
+        dayCell.className = 'day-cell';
+        if(isOtherMonth) dayCell.classList.add('other-month');
+        if(cellDate === today) dayCell.classList.add('today');
+        if(cellDate === state.selectedDate) dayCell.classList.add('selected');
+
+        const number = document.createElement('div');
+        number.className = 'day-number';
+        number.textContent = dayNumber;
+        dayCell.appendChild(number);
+
+        const bookingsWrap = document.createElement('div');
+        bookingsWrap.className = 'day-bookings';
+        const dayBookings = bookingsForDate(cellDate);
+        dayBookings.slice(0, 2).forEach(booking => {
+          const chip = document.createElement('div');
+          chip.className = 'booking-chip';
+          chip.textContent = `${booking.startTime || ''} ${booking.clientName}`.trim();
+          bookingsWrap.appendChild(chip);
+        });
+        if(dayBookings.length > 2){
+          const more = document.createElement('div');
+          more.className = 'booking-chip';
+          more.textContent = `+${dayBookings.length - 2} more`;
+          bookingsWrap.appendChild(more);
+        }
+        dayCell.appendChild(bookingsWrap);
+
+        dayCell.addEventListener('click', () => {
+          state.selectedDate = cellDate;
+          const selectedDateObj = new Date(`${cellDate}T12:00:00`);
+          state.currentMonth = selectedDateObj.getMonth();
+          state.currentYear = selectedDateObj.getFullYear();
+          els.bookingDate.value = cellDate;
+          saveState();
+          render();
+        });
+
+        els.calendarGrid.appendChild(dayCell);
+      }
+    }
+
+    function renderBookingList(){
+      els.bookingList.innerHTML = '';
+      const dayBookings = bookingsForDate(state.selectedDate);
+      if(!dayBookings.length){
+        els.bookingList.innerHTML = '<div class="empty">No jobs booked on this date yet.</div>';
+        return;
+      }
+
+      dayBookings.forEach(booking => {
+        const fragment = els.bookingCardTemplate.content.cloneNode(true);
+        const title = fragment.querySelector('.booking-title');
+        const meta = fragment.querySelector('.booking-meta');
+        const notes = fragment.querySelector('.booking-notes');
+        const badge = fragment.querySelector('.status-badge');
+        const editBtn = fragment.querySelector('.edit-booking-btn');
+        const exportBtn = fragment.querySelector('.export-booking-btn');
+        const duplicateBtn = fragment.querySelector('.duplicate-booking-btn');
+        const deleteBtn = fragment.querySelector('.delete-booking-btn');
+
+        title.textContent = booking.clientName || 'Client';
+        meta.textContent = `${booking.serviceType || 'Cleaning Job'} • ${booking.startTime || ''}${booking.endTime ? ` - ${booking.endTime}` : ''} • ${booking.propertyAddress || 'No address'}${booking.quotedPrice ? ` • ${formatCurrency(booking.quotedPrice)}` : ''}`;
+        notes.textContent = booking.bookingNotes || 'No notes added for this booking.';
+        badge.textContent = booking.bookingStatus || 'Pending';
+        badge.classList.add(`status-${(booking.bookingStatus || 'pending').toLowerCase()}`);
+
+        editBtn.addEventListener('click', () => editBooking(booking.id));
+        exportBtn.addEventListener('click', () => exportBookingToCalendar(booking));
+        duplicateBtn.addEventListener('click', () => duplicateBooking(booking.id));
+        deleteBtn.addEventListener('click', () => deleteBooking(booking.id));
+
+        els.bookingList.appendChild(fragment);
+      });
+    }
+
+    function updateSummary(){
+      const totalJobs = state.bookings.length;
+      const monthJobs = state.bookings.filter(item => {
+        if(!item.bookingDate) return false;
+        const [year, month] = item.bookingDate.split('-').map(Number);
+        return year === state.currentYear && (month - 1) === state.currentMonth;
+      }).length;
+      const selectedJobs = bookingsForDate(state.selectedDate).length;
+
+      els.summaryTotalJobs.textContent = totalJobs;
+      els.summaryMonthJobs.textContent = monthJobs;
+      els.summarySelectedDate.textContent = formatHumanDate(state.selectedDate);
+      els.summarySelectedJobs.textContent = selectedJobs;
+    }
+
+    function clearAllBookings(){
+      const confirmed = window.confirm('Clear all saved bookings from this device?');
+      if(!confirmed) return;
+      state = defaultState();
+      saveState();
+      resetForm();
+      render();
+    }
+
+    function render(){
+      renderCalendar();
+      renderBookingList();
+      updateSummary();
+    }
+
+    els.saveBookingBtn.addEventListener('click', saveBooking);
+    els.resetFormBtn.addEventListener('click', resetForm);
+    els.exportSelectedBtn.addEventListener('click', exportSelectedDate);
+    els.clearAllBtn.addEventListener('click', clearAllBookings);
+
+    els.prevMonthBtn.addEventListener('click', () => {
+      state.currentMonth -= 1;
+      if(state.currentMonth < 0){
+        state.currentMonth = 11;
+        state.currentYear -= 1;
+      }
+      saveState();
+      render();
+    });
+
+    els.nextMonthBtn.addEventListener('click', () => {
+      state.currentMonth += 1;
+      if(state.currentMonth > 11){
+        state.currentMonth = 0;
+        state.currentYear += 1;
+      }
+      saveState();
+      render();
+    });
+
+    els.bookingDate.addEventListener('change', event => {
+      if(event.target.value){
+        state.selectedDate = event.target.value;
+        const selected = new Date(`${event.target.value}T12:00:00`);
+        state.currentMonth = selected.getMonth();
+        state.currentYear = selected.getFullYear();
+        saveState();
+        render();
+      }
+    });
+
+    resetForm();
+    render();
+  </script>
+</body>
+</html>

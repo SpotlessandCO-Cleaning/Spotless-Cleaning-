@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Spotless & Co Cleaning Quote Creator</title>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    :root{
+      --bg:#f5f1ea;
+      --sand:#efe6da;
+      --cream:#fcfaf7;
+      --ink:#2f2a26;
+      --muted:#776b61;
+      --line:#dccfbe;
+      --gold:#c8a977;
+      --gold-deep:#b28f57;
+      --forest:#31443a;
+      --forest-soft:#42584c;
+      --danger:#b85c5c;
+      --shadow:0 16px 38px rgba(58,42,24,.10);
+      --radius-xl:28px;
+      --radius-lg:20px;
+      --radius-md:16px;
+    }
+
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+    html,body{
+  margin:0;
+  padding:0;
+  background:
+    linear-gradient(rgba(255,255,255,0.72), rgba(255,255,255,0.72)),
+    url('background.png') center center / cover no-repeat fixed;
+  color:var(--ink);
+}
+
+    body{min-height:100vh;}
+
+    .shell{
+      width:min(100%, 760px);
+      margin:0 auto;
+      padding:16px 14px 34px;
+    }
+
+    .hero{
+      position:relative;
+      overflow:hidden;
+      background:linear-gradient(145deg, rgba(200,169,119,.20), rgba(255,255,255,.72));
+      border:1px solid rgba(200,169,119,.35);
+      border-radius:32px;
+      padding:22px 18px;
+      box-shadow:var(--shadow);
+      margin-bottom:14px;
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:auto -40px -50px auto;
+      width:160px;
+      height:160px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(200,169,119,.25), transparent 68%);
+      pointer-events:none;
+    }
+
+    .brand-row{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      position:relative;
+      z-index:1;
+    }
+
+    .brand-mark{
+      width:54px;
+      height:54px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(145deg,var(--forest),var(--forest-soft));
+      color:#fff;
+      font-size:1.4rem;
+      font-weight:800;
+      letter-spacing:.04em;
+      box-shadow:0 12px 24px rgba(49,68,58,.18);
+      flex:0 0 auto;
+    }
+
+    .eyebrow{
+      margin:0 0 4px;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      font-size:.72rem;
+      color:var(--gold-deep);
+      font-weight:800;
+    }
+
+    h1{
+      margin:0;
+      font-size:1.42rem;
+      line-height:1.12;
+      letter-spacing:-.02em;
+    }
+
+    .hero-copy{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-size:.96rem;
+      line-height:1.5;
+      max-width:42ch;
+      position:relative;
+      z-index:1;
+    }
+
+    .card{
+      background:rgba(252,250,247,.95);
+      border:1px solid var(--line);
+      border-radius:var(--radius-xl);
+      padding:14px;
+      box-shadow:var(--shadow);
+      margin-bottom:14px;
+    }
+
+    .card-title{
+      margin:0 0 12px;
+      font-size:1rem;
+      font-weight:800;
+      letter-spacing:-.01em;
+    }
+
+    .grid{display:grid;gap:12px;}
+    .field{display:flex;flex-direction:column;gap:7px;}
+
+    label{
+      font-size:.88rem;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    input,select,textarea{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:16px;
+      padding:14px;
+      font-size:16px;
+      outline:none;
+      transition:border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+      appearance:none;
+    }
+
+    textarea{min-height:96px;resize:vertical;}
+
+    input:focus,select:focus,textarea:focus{
+      border-color:var(--gold);
+      box-shadow:0 0 0 4px rgba(200,169,119,.16);
+    }
+
+    .quick-actions,
+    .toolbar{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .btn{
+      border:none;
+      border-radius:18px;
+      padding:14px 14px;
+      min-height:52px;
+      font-size:.96rem;
+      font-weight:800;
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .2s ease, opacity .2s ease;
+    }
+
+    .btn:active{transform:scale(.98);}
+
+    .btn-primary{
+      color:#fff;
+      background:linear-gradient(145deg,var(--forest),var(--forest-soft));
+      box-shadow:0 10px 20px rgba(49,68,58,.14);
+    }
+
+    .btn-accent{
+      color:#48351d;
+      background:linear-gradient(145deg,#e1c79d,var(--gold));
+      box-shadow:0 10px 20px rgba(200,169,119,.18);
+    }
+
+    .btn-soft{
+      color:var(--ink);
+      background:#fff;
+      border:1px solid var(--line);
+    }
+
+    .btn-danger{
+      color:#fff;
+      background:linear-gradient(145deg,#c97474,var(--danger));
+    }
+
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .pill{
+      background:linear-gradient(180deg,#fff 0%, #f9f5ef 100%);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+    }
+
+    .pill-label{
+      color:var(--muted);
+      font-size:.8rem;
+      margin-bottom:4px;
+      font-weight:700;
+    }
+
+    .pill-value{
+      font-size:1.1rem;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .quote-strip{
+      background:linear-gradient(135deg, rgba(49,68,58,.08), rgba(200,169,119,.08));
+      border:1px dashed rgba(178,143,87,.4);
+      border-radius:20px;
+      padding:12px 14px;
+      color:var(--muted);
+      font-size:.9rem;
+      line-height:1.5;
+      margin-top:12px;
+    }
+
+    .rooms{
+      display:grid;
+      gap:12px;
+    }
+
+    .room-card{
+      background:linear-gradient(180deg,#fff 0%, #faf6f0 100%);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:14px;
+    }
+
+    .room-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .room-title{
+      margin:0;
+      font-size:1rem;
+      font-weight:800;
+    }
+
+    .room-grid{display:grid;gap:12px;}
+
+    .signature-box{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      padding:10px;
+    }
+
+    #signaturePad{
+      width:100%;
+      height:180px;
+      display:block;
+      border-radius:12px;
+      background:#fff;
+      touch-action:none;
+      cursor:crosshair;
+    }
+
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      padding:18px 12px;
+      border-radius:20px;
+      border:1px dashed var(--line);
+      background:#fffcf8;
+    }
+
+    .footer-note{
+      margin-top:12px;
+      text-align:center;
+      color:var(--muted);
+      font-size:.82rem;
+      line-height:1.45;
+    }
+
+    .print-only{display:none;}
+    .screen-only{display:block;}
+
+    @media (min-width: 640px){
+      .shell{padding:22px 18px 40px;}
+      .card{padding:18px;}
+      .room-grid{grid-template-columns:1fr 1fr;}
+      .hero{padding:26px 22px;}
+    }
+
+    @media print{
+      body{
+        background:#fff;
+        color:#111;
+      }
+
+      .shell{
+        width:100%;
+        max-width:none;
+        padding:0;
+      }
+
+      .screen-only,
+      .btn,
+      .toolbar,
+      .quick-actions{
+        display:none !important;
+      }
+
+      .print-only{display:block;}
+
+      .hero,
+      .card,
+      .room-card,
+      .pill,
+      .signature-box{
+        background:#fff !important;
+        box-shadow:none !important;
+        border:1px solid #cfc6ba !important;
+      }
+
+      input,select,textarea{
+        background:#fff !important;
+        color:#111 !important;
+        border:1px solid #d7d0c7 !important;
+      }
+
+      label,.hero-copy,.pill-label,.footer-note,.quote-strip{
+        color:#555 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="brand-row">
+		<img src="logo.png" alt="Spotless & Co Logo">
+        <div>
+          <h1>Cleaning Quote &amp; Room Planner</h1>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Client &amp; Property Details</h2>
+      <div class="grid">
+        <div class="field">
+          <label for="jobName">Client / Job Name</label>
+          <input id="jobName" type="text" placeholder="Enter client or property name" />
+        </div>
+        <div class="field">
+          <label for="jobAddress">Address / Location</label>
+          <input id="jobAddress" type="text" placeholder="Enter job address" />
+        </div>
+        <div class="field">
+          <label for="jobHourlyRate">Hourly Rate / Quote Rate ($)</label>
+          <input id="jobHourlyRate" type="number" min="0" step="0.01" placeholder="Enter hourly rate or blended quote rate" />
+        </div>
+        <div class="field">
+          <label for="jobNotes">General Notes</label>
+          <textarea id="jobNotes" placeholder="Access details, priorities, supplies, or client requests"></textarea>
+        </div>
+      </div>
+
+      <div class="quick-actions screen-only" style="margin-top:14px;">
+        <button class="btn btn-primary" id="addRoomBtn">+ Add Room</button>
+        <button class="btn btn-soft" id="clearAllBtn">Clear All</button>
+      </div>
+    </section>
+
+    <section class="card screen-only">
+      <h2 class="card-title">Export &amp; Totals</h2>
+      <div class="toolbar">
+        <button class="btn btn-accent" id="exportCsvBtn">Export Quote</button>
+        <button class="btn btn-primary" id="pdfBtn">Generate Quote</button>
+      </div>
+      <div class="toolbar" style="margin-top:10px;">
+        <button class="btn btn-soft" id="shareBtn">Share Quote</button>
+        <button class="btn btn-soft" id="copySummaryBtn">Copy Summary</button>
+      </div>
+
+      <div class="summary">
+        <div class="pill">
+          <div class="pill-label">Total Rooms</div>
+          <div class="pill-value" id="totalRooms">0</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Estimated Total Time</div>
+          <div class="pill-value" id="totalTime">0 min</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Hourly / Quote Rate</div>
+          <div class="pill-value" id="displayRate">$0.00</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Estimated Total Price</div>
+          <div class="pill-value" id="estimatedPrice">$0.00</div>
+        </div>
+      </div>
+
+      <div class="quote-strip">This layout is designed for quick quoting on mobile and clean handoff into PDF or spreadsheet format.</div>
+    </section>
+
+    <section class="card print-only">
+      <h2 class="card-title">Quote Summary</h2>
+      <div class="summary">
+        <div class="pill">
+          <div class="pill-label">Total Rooms</div>
+          <div class="pill-value" id="printTotalRooms">0</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Estimated Total Time</div>
+          <div class="pill-value" id="printTotalTime">0 min</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Hourly / Quote Rate</div>
+          <div class="pill-value" id="printDisplayRate">$0.00</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Estimated Total Price</div>
+          <div class="pill-value" id="printEstimatedPrice">$0.00</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Client Signature</h2>
+      <div class="grid">
+        <div class="field">
+          <label for="clientName">Client Name</label>
+          <input id="clientName" type="text" placeholder="Enter client full name" />
+        </div>
+        <div class="field">
+          <label for="signatureDate">Date</label>
+          <input id="signatureDate" type="date" />
+        </div>
+        <div class="field">
+          <label for="signaturePad">Signature</label>
+          <div class="signature-box">
+            <canvas id="signaturePad"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="quick-actions screen-only" style="margin-top:14px;">
+        <button class="btn btn-soft" id="clearSignatureBtn">Clear Signature</button>
+        <button class="btn btn-soft" id="saveSignatureBtn">Save Signature</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Room Breakdown</h2>
+      <div id="roomsContainer" class="rooms"></div>
+      <p class="footer-note">On supported mobile browsers, “Share PDF” uses the native device share sheet. Otherwise it falls back to opening the PDF in a new tab.</p>
+    </section>
+  </div>
+
+  <template id="roomTemplate">
+    <article class="room-card">
+      <div class="room-head">
+        <h3 class="room-title">Room</h3>
+        <button class="btn btn-danger remove-room-btn screen-only" type="button">Remove</button>
+      </div>
+
+      <div class="room-grid">
+        <div class="field">
+          <label>Room Name</label>
+          <input type="text" class="room-name" placeholder="Example: Master Bathroom" />
+        </div>
+
+        <div class="field">
+          <label>Cleaning Type</label>
+          <select class="cleaning-type">
+            <option value="">Select cleaning type</option>
+            <option value="Standard Clean">Standard Clean</option>
+            <option value="Deep Clean">Deep Clean</option>
+            <option value="Move In / Move Out">Move In / Move Out</option>
+            <option value="Post Construction">Post Construction</option>
+            <option value="Disinfection">Disinfection</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Estimated Time (minutes)</label>
+          <input type="number" min="0" step="1" class="estimated-time" placeholder="Example: 60" />
+        </div>
+
+        <div class="field">
+          <label>Room Details / Tasks</label>
+          <textarea class="room-details" placeholder="List the cleaning tasks for this room"></textarea>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script>
+    const STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v3';
+
+    const els = {
+      jobName: document.getElementById('jobName'),
+      jobAddress: document.getElementById('jobAddress'),
+      jobHourlyRate: document.getElementById('jobHourlyRate'),
+      jobNotes: document.getElementById('jobNotes'),
+      addRoomBtn: document.getElementById('addRoomBtn'),
+      clearAllBtn: document.getElementById('clearAllBtn'),
+      exportCsvBtn: document.getElementById('exportCsvBtn'),
+      pdfBtn: document.getElementById('pdfBtn'),
+      shareBtn: document.getElementById('shareBtn'),
+      copySummaryBtn: document.getElementById('copySummaryBtn'),
+      roomsContainer: document.getElementById('roomsContainer'),
+      roomTemplate: document.getElementById('roomTemplate'),
+      totalRooms: document.getElementById('totalRooms'),
+      totalTime: document.getElementById('totalTime'),
+      displayRate: document.getElementById('displayRate'),
+      estimatedPrice: document.getElementById('estimatedPrice'),
+      printTotalRooms: document.getElementById('printTotalRooms'),
+      printTotalTime: document.getElementById('printTotalTime'),
+      printDisplayRate: document.getElementById('printDisplayRate'),
+      printEstimatedPrice: document.getElementById('printEstimatedPrice'),
+      clientName: document.getElementById('clientName'),
+      signatureDate: document.getElementById('signatureDate'),
+      signaturePad: document.getElementById('signaturePad'),
+      clearSignatureBtn: document.getElementById('clearSignatureBtn'),
+      saveSignatureBtn: document.getElementById('saveSignatureBtn')
+    };
+
+    function defaultState(){
+      return {
+        jobName: '',
+        jobAddress: '',
+        jobHourlyRate: '',
+        jobNotes: '',
+        clientName: '',
+        signatureDate: '',
+        signatureDataUrl: '',
+        rooms: []
+      };
+    }
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return defaultState();
+        const parsed = JSON.parse(raw);
+        return {
+          jobName: parsed.jobName || '',
+          jobAddress: parsed.jobAddress || '',
+          jobHourlyRate: parsed.jobHourlyRate || '',
+          jobNotes: parsed.jobNotes || '',
+          clientName: parsed.clientName || '',
+          signatureDate: parsed.signatureDate || '',
+          signatureDataUrl: parsed.signatureDataUrl || '',
+          rooms: Array.isArray(parsed.rooms) ? parsed.rooms : []
+        };
+      }catch(error){
+        console.error('Unable to load saved planner data:', error);
+        return defaultState();
+      }
+    }
+
+    let state = loadState();
+
+    function saveState(){
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }catch(error){
+        console.error('Unable to save planner data:', error);
+      }
+    }
+
+    function newRoom(data = {}){
+      return {
+        id: data.id || crypto.randomUUID(),
+        roomName: data.roomName || '',
+        cleaningType: data.cleaningType || '',
+        estimatedTime: data.estimatedTime || '',
+        roomDetails: data.roomDetails || ''
+      };
+    }
+
+    function formatCurrency(value){
+      return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(value || 0);
+    }
+
+    function addRoom(roomData = {}){
+      state.rooms.push(newRoom(roomData));
+      saveState();
+      render();
+    }
+
+    function removeRoom(id){
+      state.rooms = state.rooms.filter(room => room.id !== id);
+      saveState();
+      render();
+    }
+
+    function updateRoom(id, patch){
+      const room = state.rooms.find(item => item.id === id);
+      if(!room) return;
+      Object.assign(room, patch);
+      saveState();
+      updateStats();
+    }
+
+    function updateStats(){
+      const roomCount = state.rooms.length;
+      const totalMinutes = state.rooms.reduce((sum, room) => {
+        const value = parseFloat(room.estimatedTime);
+        return sum + (Number.isFinite(value) ? value : 0);
+      }, 0);
+      const hourlyRate = parseFloat(state.jobHourlyRate);
+      const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
+      const estimatedPrice = (totalMinutes / 60) * safeRate;
+
+      const totalText = `${totalMinutes} min`;
+      const rateText = formatCurrency(safeRate);
+      const priceText = formatCurrency(estimatedPrice);
+
+      els.totalRooms.textContent = roomCount;
+      els.totalTime.textContent = totalText;
+      els.displayRate.textContent = rateText;
+      els.estimatedPrice.textContent = priceText;
+      if(els.printTotalRooms) els.printTotalRooms.textContent = roomCount;
+      if(els.printTotalTime) els.printTotalTime.textContent = totalText;
+      if(els.printDisplayRate) els.printDisplayRate.textContent = rateText;
+      if(els.printEstimatedPrice) els.printEstimatedPrice.textContent = priceText;
+    }
+
+    function render(){
+      els.jobName.value = state.jobName;
+      els.jobAddress.value = state.jobAddress;
+      els.jobHourlyRate.value = state.jobHourlyRate;
+      els.jobNotes.value = state.jobNotes;
+      els.clientName.value = state.clientName;
+      els.signatureDate.value = state.signatureDate;
+      els.roomsContainer.innerHTML = '';
+
+      if(state.rooms.length === 0){
+        els.roomsContainer.innerHTML = '<div class="empty">No rooms added yet. Tap “Add Room” to start building your quote.</div>';
+      } else {
+        state.rooms.forEach((room, index) => {
+          const fragment = els.roomTemplate.content.cloneNode(true);
+          const title = fragment.querySelector('.room-title');
+          const roomNameInput = fragment.querySelector('.room-name');
+          const cleaningTypeSelect = fragment.querySelector('.cleaning-type');
+          const estimatedTimeInput = fragment.querySelector('.estimated-time');
+          const roomDetailsTextarea = fragment.querySelector('.room-details');
+          const removeBtn = fragment.querySelector('.remove-room-btn');
+
+          title.textContent = room.roomName.trim() || `Room ${index + 1}`;
+          roomNameInput.value = room.roomName;
+          cleaningTypeSelect.value = room.cleaningType;
+          estimatedTimeInput.value = room.estimatedTime;
+          roomDetailsTextarea.value = room.roomDetails;
+
+          roomNameInput.addEventListener('input', event => {
+            const value = event.target.value;
+            updateRoom(room.id, { roomName: value });
+            title.textContent = value.trim() || `Room ${index + 1}`;
+          });
+
+          cleaningTypeSelect.addEventListener('change', event => {
+            updateRoom(room.id, { cleaningType: event.target.value });
+          });
+
+          estimatedTimeInput.addEventListener('input', event => {
+            updateRoom(room.id, { estimatedTime: event.target.value });
+          });
+
+          roomDetailsTextarea.addEventListener('input', event => {
+            updateRoom(room.id, { roomDetails: event.target.value });
+          });
+
+          removeBtn.addEventListener('click', () => removeRoom(room.id));
+          els.roomsContainer.appendChild(fragment);
+        });
+      }
+
+      updateStats();
+    }
+
+    function bindTopFields(){
+      els.jobName.addEventListener('input', event => {
+        state.jobName = event.target.value;
+        saveState();
+      });
+
+      els.jobAddress.addEventListener('input', event => {
+        state.jobAddress = event.target.value;
+        saveState();
+      });
+
+      els.jobHourlyRate.addEventListener('input', event => {
+        state.jobHourlyRate = event.target.value;
+        saveState();
+        updateStats();
+      });
+
+      els.jobNotes.addEventListener('input', event => {
+        state.jobNotes = event.target.value;
+        saveState();
+      });
+
+      els.clientName.addEventListener('input', event => {
+        state.clientName = event.target.value;
+        saveState();
+      });
+
+      els.signatureDate.addEventListener('input', event => {
+        state.signatureDate = event.target.value;
+        saveState();
+      });
+    }
+
+    function csvEscape(value){
+      return `"${String(value ?? '').replace(/"/g, '""')}"`;
+    }
+
+    function exportCsv(){
+      const rows = [[
+        'Client / Job Name',
+        'Address / Location',
+        'Hourly / Quote Rate ($)',
+        'General Notes',
+        'Client Name',
+        'Signature Date',
+        'Room Name',
+        'Cleaning Type',
+        'Estimated Time (minutes)',
+        'Room Details / Tasks'
+      ]];
+
+      if(state.rooms.length === 0){
+        rows.push([
+          state.jobName,
+          state.jobAddress,
+          state.jobHourlyRate,
+          state.jobNotes,
+          state.clientName,
+          state.signatureDate,
+          '', '', '', ''
+        ]);
+      } else {
+        state.rooms.forEach(room => {
+          rows.push([
+            state.jobName,
+            state.jobAddress,
+            state.jobHourlyRate,
+            state.jobNotes,
+            state.clientName,
+            state.signatureDate,
+            room.roomName,
+            room.cleaningType,
+            room.estimatedTime,
+            room.roomDetails
+          ]);
+        });
+      }
+
+      const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      const fileBase = (state.jobName || 'spotless-co-quote').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
+      downloadLink.href = url;
+      downloadLink.download = `${fileBase || 'spotless-co-quote'}.csv`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function buildPdfBlob(){
+      updateStats();
+      const { jsPDF } = window.jspdf;
+      const pdfDoc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
+
+      const pageWidth = pdfDoc.internal.pageSize.getWidth();
+      const pageHeight = pdfDoc.internal.pageSize.getHeight();
+      const margin = 40;
+      const contentWidth = pageWidth - (margin * 2);
+      let y = margin;
+
+      const totalMinutes = state.rooms.reduce((sum, room) => {
+        const value = parseFloat(room.estimatedTime);
+        return sum + (Number.isFinite(value) ? value : 0);
+      }, 0);
+      const hourlyRate = parseFloat(state.jobHourlyRate);
+      const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
+      const estimatedPrice = (totalMinutes / 60) * safeRate;
+      const todayText = state.signatureDate || new Date().toISOString().split('T')[0];
+
+      function currency(value){
+        return formatCurrency(value);
+      }
+
+      function addNewPage(){
+        pdfDoc.addPage();
+        y = margin;
+      }
+
+      function ensureSpace(heightNeeded){
+        if (y + heightNeeded > pageHeight - margin) addNewPage();
+      }
+
+      function textBlock(text, x, yPos, maxWidth, options = {}){
+        const lines = pdfDoc.splitTextToSize(String(text || ''), maxWidth);
+        pdfDoc.text(lines, x, yPos, options);
+        return lines.length * 14;
+      }
+
+      pdfDoc.setFillColor(49, 68, 58);
+      pdfDoc.roundedRect(margin, y, contentWidth, 78, 16, 16, 'F');
+      pdfDoc.setTextColor(255, 255, 255);
+      pdfDoc.setFont('helvetica', 'bold');
+      pdfDoc.setFontSize(22);
+      pdfDoc.text('Spotless & Co', margin + 18, y + 28);
+      pdfDoc.setFontSize(16);
+      pdfDoc.text('Cleaning Quote', margin + 18, y + 50);
+      pdfDoc.setFont('helvetica', 'normal');
+      pdfDoc.setFontSize(10);
+      pdfDoc.text(`Quote Date: ${todayText}`, pageWidth - margin - 110, y + 28);
+      pdfDoc.text(`Client: ${state.jobName || 'Not provided'}`, pageWidth - margin - 110, y + 44);
+      pdfDoc.text(`Address: ${state.jobAddress || 'Not provided'}`, pageWidth - margin - 110, y + 60);
+      y += 98;
+
+      pdfDoc.setTextColor(47, 42, 38);
+      pdfDoc.setFont('helvetica', 'bold');
+      pdfDoc.setFontSize(14);
+      pdfDoc.text('Quote Summary', margin, y);
+      y += 14;
+
+      const boxGap = 10;
+      const boxWidth = (contentWidth - boxGap) / 2;
+      const leftX = margin;
+      const rightX = margin + boxWidth + boxGap;
+
+      pdfDoc.setDrawColor(220, 207, 190);
+      pdfDoc.setFillColor(252, 250, 247);
+      pdfDoc.roundedRect(leftX, y, boxWidth, 92, 12, 12, 'FD');
+      pdfDoc.roundedRect(rightX, y, boxWidth, 92, 12, 12, 'FD');
+
+      pdfDoc.setFontSize(10);
+      pdfDoc.setTextColor(119, 107, 97);
+      pdfDoc.text('Client Information', leftX + 14, y + 18);
+      pdfDoc.text('Pricing Breakdown', rightX + 14, y + 18);
+
+      pdfDoc.setTextColor(47, 42, 38);
+      pdfDoc.setFont('helvetica', 'normal');
+      pdfDoc.text(`Client Name: ${state.clientName || state.jobName || 'Not provided'}`, leftX + 14, y + 38);
+      pdfDoc.text(`Property: ${state.jobAddress || 'Not provided'}`, leftX + 14, y + 54);
+      pdfDoc.text(`Rooms Included: ${state.rooms.length}`, leftX + 14, y + 70);
+
+      pdfDoc.text(`Rate: ${currency(safeRate)} / hour`, rightX + 14, y + 38);
+      pdfDoc.text(`Estimated Time: ${totalMinutes} min`, rightX + 14, y + 54);
+      pdfDoc.setFont('helvetica', 'bold');
+      pdfDoc.text(`Estimated Total: ${currency(estimatedPrice)}`, rightX + 14, y + 74);
+      y += 112;
+
+      if (state.jobNotes && state.jobNotes.trim()) {
+        ensureSpace(70);
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.setFontSize(12);
+        pdfDoc.text('Notes', margin, y);
+        y += 10;
+        pdfDoc.setFont('helvetica', 'normal');
+        pdfDoc.setFontSize(10);
+        const noteHeight = textBlock(state.jobNotes, margin, y + 14, contentWidth);
+        y += noteHeight + 14;
+      }
+
+      ensureSpace(40);
+      pdfDoc.setFont('helvetica', 'bold');
+      pdfDoc.setFontSize(14);
+      pdfDoc.text('Room Breakdown', margin, y);
+      y += 16;
+
+      const rooms = state.rooms.length ? state.rooms : [newRoom()];
+      for (let i = 0; i < rooms.length; i++) {
+        const room = rooms[i];
+        const roomName = room.roomName || `Room ${i + 1}`;
+        const cleaningType = room.cleaningType || 'Not specified';
+        const minutes = parseFloat(room.estimatedTime);
+        const safeMinutes = Number.isFinite(minutes) ? minutes : 0;
+        const roomPrice = (safeMinutes / 60) * safeRate;
+        const details = room.roomDetails || 'No task details provided.';
+
+        const detailLines = pdfDoc.splitTextToSize(details, contentWidth - 28);
+        const detailHeight = Math.max(18, detailLines.length * 12);
+        const cardHeight = 76 + detailHeight;
+        ensureSpace(cardHeight + 12);
+
+        pdfDoc.setDrawColor(220, 207, 190);
+        pdfDoc.setFillColor(255, 252, 248);
+        pdfDoc.roundedRect(margin, y, contentWidth, cardHeight, 12, 12, 'FD');
+
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.setFontSize(12);
+        pdfDoc.setTextColor(47, 42, 38);
+        pdfDoc.text(roomName, margin + 14, y + 20);
+
+        pdfDoc.setFont('helvetica', 'normal');
+        pdfDoc.setFontSize(10);
+        pdfDoc.text(`Cleaning Type: ${cleaningType}`, margin + 14, y + 38);
+        pdfDoc.text(`Estimated Time: ${safeMinutes} min`, margin + 14, y + 54);
+        pdfDoc.text(`Estimated Cost: ${currency(roomPrice)}`, pageWidth - margin - 130, y + 38);
+
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.text('Tasks / Details', margin + 14, y + 72);
+        pdfDoc.setFont('helvetica', 'normal');
+        pdfDoc.text(detailLines, margin + 14, y + 88);
+
+        y += cardHeight + 12;
+      }
+
+      ensureSpace(110);
+      y += 8;
+      pdfDoc.setDrawColor(220, 207, 190);
+      pdfDoc.line(margin, y, pageWidth - margin, y);
+      y += 18;
+
+      pdfDoc.setFont('helvetica', 'bold');
+      pdfDoc.setFontSize(13);
+      pdfDoc.text('Approval & Signature', margin, y);
+      y += 16;
+
+      pdfDoc.setFont('helvetica', 'normal');
+      pdfDoc.setFontSize(10);
+      pdfDoc.text(`Client Name: ${state.clientName || state.jobName || 'Not provided'}`, margin, y);
+      pdfDoc.text(`Date: ${todayText}`, pageWidth - margin - 90, y);
+      y += 18;
+
+      pdfDoc.setDrawColor(190, 180, 170);
+      pdfDoc.roundedRect(margin, y, contentWidth, 86, 10, 10, 'D');
+
+      if (state.signatureDataUrl) {
+        try {
+          pdfDoc.addImage(state.signatureDataUrl, 'PNG', margin + 10, y + 10, 180, 50, undefined, 'FAST');
+        } catch (e) {
+          pdfDoc.setFontSize(10);
+          pdfDoc.text('Signature image could not be embedded.', margin + 12, y + 28);
+        }
+      } else {
+        pdfDoc.setFontSize(10);
+        pdfDoc.setTextColor(119, 107, 97);
+        pdfDoc.text('No signature captured.', margin + 12, y + 28);
+        pdfDoc.setTextColor(47, 42, 38);
+      }
+
+      pdfDoc.setDrawColor(160, 150, 140);
+      pdfDoc.line(margin + 12, y + 66, margin + 220, y + 66);
+      pdfDoc.setFontSize(9);
+      pdfDoc.text('Client Signature', margin + 12, y + 79);
+
+      pdfDoc.setFont('helvetica', 'bold');
+      pdfDoc.setFontSize(12);
+      pdfDoc.text(`Total Estimated Quote: ${currency(estimatedPrice)}`, pageWidth - margin - 190, y + 76);
+
+      return pdfDoc.output('blob');
+    }
+
+    async function generatePdf(){
+      try{
+        const blob = await buildPdfBlob();
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        const fileBase = (state.jobName || 'spotless-co-quote').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
+        anchor.href = url;
+        anchor.download = `${fileBase || 'spotless-co-quote'}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }catch(error){
+        console.error('PDF generation failed:', error);
+        alert('Unable to generate the PDF on this device/browser.');
+      }
+    }
+
+    async function sharePdf(){
+      try{
+        const blob = await buildPdfBlob();
+        const fileBase = (state.jobName || 'spotless-co-quote').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
+        const file = new File([blob], `${fileBase || 'spotless-co-quote'}.pdf`, { type: 'application/pdf' });
+        const shareData = {
+          title: state.jobName || 'Spotless & Co Quote',
+          text: `Spotless & Co cleaning quote for ${state.jobName || 'your property'}`,
+          files: [file]
+        };
+
+        if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+          await navigator.share(shareData);
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        alert('File sharing is not supported here, so the PDF was opened in a new tab instead.');
+      }catch(error){
+        if(error && error.name === 'AbortError') return;
+        console.error('Share failed:', error);
+        alert('Unable to share the PDF on this device/browser.');
+      }
+    }
+
+    async function copySummary(){
+      const totalMinutes = state.rooms.reduce((sum, room) => {
+        const value = parseFloat(room.estimatedTime);
+        return sum + (Number.isFinite(value) ? value : 0);
+      }, 0);
+      const rate = parseFloat(state.jobHourlyRate);
+      const safeRate = Number.isFinite(rate) ? rate : 0;
+      const price = (totalMinutes / 60) * safeRate;
+      const roomLines = state.rooms.map((room, index) => `${index + 1}. ${room.roomName || `Room ${index + 1}`} — ${room.cleaningType || 'Cleaning type not set'} — ${room.estimatedTime || 0} min`).join('\n');
+      const summary = [
+        'Spotless & Co Cleaning Quote',
+        `Client: ${state.jobName || ''}`,
+        `Address: ${state.jobAddress || ''}`,
+        `Rate: ${formatCurrency(safeRate)}`,
+        `Total Rooms: ${state.rooms.length}`,
+        `Estimated Time: ${totalMinutes} min`,
+        `Estimated Price: ${formatCurrency(price)}`,
+        '',
+        roomLines
+      ].join('\n');
+
+      try{
+        await navigator.clipboard.writeText(summary);
+        alert('Quote summary copied to clipboard.');
+      }catch(error){
+        console.error('Copy failed:', error);
+        alert('Unable to copy summary on this device/browser.');
+      }
+    }
+
+    function initSignaturePad(){
+      const canvas = els.signaturePad;
+      const context = canvas.getContext('2d');
+      let drawing = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      function drawBackground(width, height){
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, width, height);
+      }
+
+      function resizeCanvas(){
+        const rect = canvas.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+        const existing = state.signatureDataUrl;
+
+        canvas.width = rect.width * ratio;
+        canvas.height = rect.height * ratio;
+
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.scale(ratio, ratio);
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.strokeStyle = '#2f2a26';
+        context.lineWidth = 2.2;
+        drawBackground(rect.width, rect.height);
+
+        if(existing){
+          const image = new Image();
+          image.onload = () => context.drawImage(image, 0, 0, rect.width, rect.height);
+          image.src = existing;
+        }
+      }
+
+      function positionFromEvent(event){
+        const rect = canvas.getBoundingClientRect();
+        const point = event.touches ? event.touches[0] : event;
+        return {
+          x: point.clientX - rect.left,
+          y: point.clientY - rect.top
+        };
+      }
+
+      function start(event){
+        drawing = true;
+        const pos = positionFromEvent(event);
+        lastX = pos.x;
+        lastY = pos.y;
+      }
+
+      function move(event){
+        if(!drawing) return;
+        event.preventDefault();
+        const pos = positionFromEvent(event);
+        context.beginPath();
+        context.moveTo(lastX, lastY);
+        context.lineTo(pos.x, pos.y);
+        context.stroke();
+        lastX = pos.x;
+        lastY = pos.y;
+      }
+
+      function end(){
+        if(!drawing) return;
+        drawing = false;
+        state.signatureDataUrl = canvas.toDataURL('image/png');
+        saveState();
+      }
+
+      canvas.addEventListener('mousedown', start);
+      canvas.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', end);
+      canvas.addEventListener('touchstart', start, { passive: false });
+      canvas.addEventListener('touchmove', move, { passive: false });
+      canvas.addEventListener('touchend', end);
+      window.addEventListener('resize', resizeCanvas);
+
+      els.clearSignatureBtn.addEventListener('click', () => {
+        state.signatureDataUrl = '';
+        saveState();
+        resizeCanvas();
+      });
+
+      els.saveSignatureBtn.addEventListener('click', () => {
+        state.signatureDataUrl = canvas.toDataURL('image/png');
+        saveState();
+        alert('Signature saved.');
+      });
+
+      resizeCanvas();
+    }
+
+    function clearAll(){
+      const confirmed = window.confirm('Clear all saved quote and room details from this device?');
+      if(!confirmed) return;
+      state = defaultState();
+      saveState();
+      render();
+      if(els.signaturePad){
+        const ctx = els.signaturePad.getContext('2d');
+        ctx.clearRect(0, 0, els.signaturePad.width, els.signaturePad.height);
+      }
+      initSignaturePad();
+    }
+
+    els.addRoomBtn.addEventListener('click', () => addRoom());
+    els.clearAllBtn.addEventListener('click', clearAll);
+    els.exportCsvBtn.addEventListener('click', exportCsv);
+    els.pdfBtn.addEventListener('click', generatePdf);
+    els.shareBtn.addEventListener('click', sharePdf);
+    els.copySummaryBtn.addEventListener('click', copySummary);
+
+    bindTopFields();
+
+    if(state.rooms.length === 0){
+      state.rooms.push(newRoom());
+      saveState();
+    }
+
+    render();
+    initSignaturePad();
+  </script>
+</body>
+</html>

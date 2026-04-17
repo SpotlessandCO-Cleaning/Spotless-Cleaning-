@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spotless &amp; Co App Home</title>
+  <style>
+    :root{
+      --rose:#a55353;
+      --rose-dark:#8f3f3f;
+      --rose-soft:#efe5e1;
+      --cream:#f5f1ef;
+      --cream-card:#f7f4f2;
+      --white:#ffffff;
+      --text:#333333;
+      --muted:#6a5d5d;
+      --border:#eadfdb;
+      --shadow:0 14px 34px rgba(0,0,0,.07);
+      --shadow-soft:0 8px 22px rgba(165,83,83,.12);
+      --radius-xl:32px;
+      --radius-lg:24px;
+      --radius-md:18px;
+      --radius-pill:999px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(circle at top left, rgba(165,83,83,.10), transparent 28%),
+        linear-gradient(180deg, #faf7f6 0%, var(--cream) 100%);
+      color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    }
+
+    a{color:inherit;text-decoration:none}
+
+    .app-shell{
+      min-height:100vh;
+      padding:22px;
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+    }
+
+    .screen{
+      width:min(1220px, 100%);
+      background:rgba(255,255,255,.58);
+      border:1px solid rgba(255,255,255,.7);
+      backdrop-filter:blur(16px);
+      border-radius:36px;
+      box-shadow:0 20px 60px rgba(74, 43, 43, .10);
+      overflow:hidden;
+      display:grid;
+      grid-template-columns:280px 1fr;
+    }
+
+    .sidebar{
+      background:linear-gradient(180deg, #f6efed 0%, #f2e7e4 100%);
+      border-right:1px solid var(--border);
+      padding:28px 20px;
+      display:flex;
+      flex-direction:column;
+      gap:24px;
+    }
+
+    .brand{
+      padding:6px 10px 12px;
+    }
+
+    .brand-mark{
+      width:52px;
+      height:52px;
+      border-radius:18px;
+      background:linear-gradient(135deg, var(--rose), var(--rose-dark));
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      box-shadow:var(--shadow-soft);
+      margin-bottom:14px;
+    }
+
+    .brand h1{
+      margin:0;
+      font-family:Georgia, "Times New Roman", serif;
+      font-size:34px;
+      font-weight:600;
+      color:var(--rose-dark);
+      letter-spacing:.01em;
+    }
+
+    .brand p{
+      margin:8px 0 0;
+      color:var(--muted);
+      line-height:1.5;
+      font-size:14px;
+    }
+
+    .nav-group{
+      display:grid;
+      gap:10px;
+    }
+
+    .nav-label{
+      padding:0 10px;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.16em;
+      color:#8d7676;
+      font-weight:700;
+    }
+
+    .nav-item{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:14px 16px;
+      border-radius:18px;
+      color:#4c4343;
+      font-weight:600;
+      transition:background .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+
+    .nav-item:hover{
+      background:rgba(255,255,255,.7);
+      transform:translateY(-1px);
+    }
+
+    .nav-item.active{
+      background:#fff;
+      box-shadow:var(--shadow);
+      color:var(--rose-dark);
+    }
+
+    .nav-icon{
+      width:42px;
+      height:42px;
+      border-radius:14px;
+      background:var(--rose-soft);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:20px;
+      flex-shrink:0;
+    }
+
+    .sidebar-card{
+      margin-top:auto;
+      background:linear-gradient(180deg, var(--rose) 0%, var(--rose-dark) 100%);
+      color:#fff;
+      border-radius:26px;
+      padding:22px;
+      box-shadow:var(--shadow-soft);
+    }
+
+    .sidebar-card h3{
+      margin:0 0 10px;
+      font-family:Georgia, "Times New Roman", serif;
+      font-size:26px;
+      font-weight:500;
+    }
+
+    .sidebar-card p{
+      margin:0 0 18px;
+      line-height:1.6;
+      font-size:14px;
+      color:rgba(255,255,255,.92);
+    }
+
+    .sidebar-card a{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:160px;
+      padding:13px 18px;
+      background:#fff;
+      color:var(--rose-dark);
+      border-radius:var(--radius-pill);
+      font-weight:700;
+    }
+
+    .content{
+      padding:26px;
+      display:grid;
+      gap:22px;
+      background:linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,.18));
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      flex-wrap:wrap;
+    }
+
+    .welcome small{
+      display:block;
+      color:#8d7676;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      margin-bottom:8px;
+    }
+
+    .welcome h2{
+      margin:0;
+      font-family:Georgia, "Times New Roman", serif;
+      font-size:46px;
+      font-weight:500;
+      line-height:1.02;
+      color:#2f2a2a;
+    }
+
+    .welcome h2 span{
+      color:var(--rose);
+      font-weight:700;
+    }
+
+    .top-actions{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .pill-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      min-height:50px;
+      padding:0 20px;
+      border-radius:var(--radius-pill);
+      font-weight:700;
+      border:1px solid transparent;
+      transition:transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+
+    .pill-btn:hover{ transform:translateY(-1px); }
+
+    .pill-btn.primary{
+      background:var(--rose);
+      color:#fff;
+      box-shadow:var(--shadow-soft);
+    }
+
+    .pill-btn.secondary{
+      background:#fff;
+      color:var(--rose-dark);
+      border-color:var(--border);
+    }
+
+    .hero-card{
+      background:linear-gradient(135deg, #f7f1ef 0%, #f4ebe8 100%);
+      border-radius:var(--radius-xl);
+      padding:28px;
+      box-shadow:var(--shadow);
+      display:grid;
+      grid-template-columns:1.2fr .9fr;
+      gap:22px;
+      align-items:stretch;
+    }
+
+    .hero-left{
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:18px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      width:fit-content;
+      padding:11px 18px;
+      border-radius:var(--radius-pill);
+      background:#ede2de;
+      color:var(--rose-dark);
+      font-size:14px;
+      font-weight:700;
+    }
+
+    .hero-left h3{
+      margin:0;
+      font-family:Georgia, "Times New Roman", serif;
+      font-size:54px;
+      line-height:.95;
+      font-weight:500;
+      color:#2f2a2a;
+      max-width:620px;
+    }
+
+    .hero-left h3 span{
+      color:var(--rose);
+      font-weight:700;
+    }
+
+    .hero-left p{
+      margin:0;
+      max-width:600px;
+      font-size:17px;
+      line-height:1.7;
+      color:var(--muted);
+    }
+
+    .quick-actions{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:14px;
+      margin-top:8px;
+    }
+
+    .mini-action{
+      background:#fff;
+      border-radius:22px;
+      padding:18px;
+      box-shadow:0 10px 24px rgba(0,0,0,.05);
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      min-height:120px;
+    }
+
+    .mini-action .mini-icon{
+      width:48px;
+      height:48px;
+      border-radius:16px;
+      background:var(--rose-soft);
+      color:var(--rose-dark);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
+      flex-shrink:0;
+    }
+
+    .mini-action strong{
+      display:block;
+      font-size:17px;
+      color:#8f4848;
+      margin-bottom:6px;
+    }
+
+    .mini-action span{
+      font-size:14px;
+      line-height:1.5;
+      color:#5f5353;
+    }
+
+    .hero-panel{
+      background:linear-gradient(180deg, var(--rose) 0%, var(--rose-dark) 100%);
+      color:#fff;
+      border-radius:28px;
+      padding:24px;
+      display:grid;
+      gap:16px;
+      box-shadow:var(--shadow-soft);
+    }
+
+    .hero-panel h4{
+      margin:0;
+      font-family:Georgia, "Times New Roman", serif;
+      font-size:30px;
+      font-weight:500;
+    }
+
+    .hero-panel p{
+      margin:0;
+      line-height:1.6;
+      color:rgba(255,255,255,.92);
+      font-size:15px;
+    }
+
+    .stat-grid{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:12px;
+    }
+
+    .stat{
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:20px;
+      padding:16px;
+    }
+
+    .stat strong{
+      display:block;
+      font-size:28px;
+      margin-bottom:4px;
+      font-weight:700;
+    }
+
+    .stat span{
+      font-size:13px;
+      color:rgba(255,255,255,.85);
+      letter-spacing:.03em;
+    }
+
+    .cards-row{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:22px;
+    }
+
+    .panel{
+      background:rgba(255,255,255,.82);
+      border:1px solid rgba(255,255,255,.7);
+      border-radius:28px;
+      padding:24px;
+      box-shadow:var(--shadow);
+    }
+
+    .panel-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:18px;
+    }
+
+    .panel-head h4{
+      margin:0;
+      font-family:Georgia, "Times New Roman", serif;
+      font-size:30px;
+      font-weight:500;
+      color:#8f4848;
+    }
+
+    .panel-head a{
+      color:var(--rose-dark);
+      font-weight:700;
+      font-size:14px;
+    }
+
+    .task-list,
+    .schedule-list{
+      display:grid;
+      gap:12px;
+    }
+
+    .task-item,
+    .schedule-item{
+      background:#fff;
+      border:1px solid #f0e5e1;
+      border-radius:20px;
+      padding:16px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+
+    .task-main,
+    .schedule-main{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      min-width:0;
+    }
+
+    .check,
+    .time-chip{
+      width:46px;
+      height:46px;
+      border-radius:15px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--rose-soft);
+      color:var(--rose-dark);
+      font-weight:700;
+      flex-shrink:0;
+    }
+
+    .task-item strong,
+    .schedule-item strong{
+      display:block;
+      color:#443939;
+      margin-bottom:4px;
+      font-size:16px;
+    }
+
+    .task-item span,
+    .schedule-item span{
+      color:#706262;
+      font-size:14px;
+    }
+
+    .status{
+      padding:9px 14px;
+      border-radius:var(--radius-pill);
+      background:#eef5ef;
+      color:#46704f;
+      font-size:13px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .status.pending{
+      background:#f7eee4;
+      color:#9a6a31;
+    }
+
+    @media (max-width: 1120px){
+      .screen{grid-template-columns:1fr}
+      .sidebar{border-right:0;border-bottom:1px solid var(--border)}
+      .hero-card,
+      .cards-row{grid-template-columns:1fr}
+    }
+
+    @media (max-width: 760px){
+      .app-shell{padding:12px}
+      .screen{border-radius:24px}
+      .content{padding:18px}
+      .sidebar{padding:18px}
+      .welcome h2{font-size:34px}
+      .hero-left h3{font-size:40px}
+      .quick-actions,
+      .stat-grid{grid-template-columns:1fr}
+      .topbar{align-items:flex-start}
+      .panel-head{align-items:flex-start;flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <div class="screen">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">✨</div>
+          <h1>Spotless &amp; Co</h1>
+          <p>Tools for managing quotes, cleaning workflows, and scheduling in one modern app.</p>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-label">Main Menu</div>
+          <a class="nav-item active" href="index.html">
+            <div class="nav-icon">⌂</div>
+            <div>Home</div>
+          </a>
+          <a class="nav-item" href="spotless.html">
+            <div class="nav-icon">✨</div>
+            <div>Quoting</div>
+          </a>
+          <a class="nav-item" href="spotless 2.html">
+            <div class="nav-icon">🧼</div>
+            <div>Cleaning Check List</div>
+          </a>
+          <a class="nav-item" href="Spotless_Booking.html">
+            <div class="nav-icon">📅</div>
+            <div>Scheduling</div>
+          </a>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>Quick Start</h3>
+          <p>Create a new quote in seconds and move seamlessly into cleaning tasks and scheduling.</p>
+          <a href="spotless.html">New Quote</a>
+        </div>
+      </aside>
+
+      <section class="content">
+        <div class="topbar">
+          <div class="welcome">
+            <small>Dashboard</small>
+            <h2>Good morning, <span>Spotless</span></h2>
+          </div>
+          <div class="top-actions">
+            <a class="pill-btn secondary" href="Spotless Booking.html">Today’s Schedule</a>
+            <a class="pill-btn primary" href="Spotless.html">Create Quote</a>
+          </div>
+        </div>
+
+        <section class="hero-card">
+          <div class="hero-left">
+            <div>
+              <div class="badge">Premium Cleaning App</div>
+              <h3>Everything your <span>cleaning business</span> needs.</h3>
+            </div>
+            <p>Manage quotes, task lists, and upcoming appointments from one refined home screen with the same rose and cream styling as your attached reference, but with a more modern app layout.</p>
+
+            <div class="quick-actions">
+              <a class="mini-action" href="spotless.html">
+                <div class="mini-icon">✨</div>
+                <div>
+                  <strong>Quoting</strong>
+                  <span>Build polished client-ready estimates quickly.</span>
+                </div>
+              </a>
+              <a class="mini-action" href="spotless 2.html">
+                <div class="mini-icon">🧼</div>
+                <div>
+                  <strong>Check List</strong>
+                  <span>Track room-by-room tasks and cleaning steps.</span>
+                </div>
+              </a>
+              <a class="mini-action" href="Spotless_Booking.html">
+                <div class="mini-icon">📅</div>
+                <div>
+                  <strong>Scheduling</strong>
+                  <span>Stay on top of bookings and appointment flow.</span>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <div class="hero-panel">
+            <h4>Today at a glance</h4>
+            <p>A simple, elegant summary card for your team’s workflow and daily priorities.</p>
+            <div class="stat-grid">
+              <div class="stat">
+                <strong>08</strong>
+                <span>Jobs Scheduled</span>
+              </div>
+              <div class="stat">
+                <strong>03</strong>
+                <span>Quotes Pending</span>
+              </div>
+              <div class="stat">
+                <strong>14</strong>
+                <span>Checklist Items</span>
+              </div>
+              <div class="stat">
+                <strong>96%</strong>
+                <span>Completion Rate</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="cards-row">
+          <div class="panel">
+            <div class="panel-head">
+              <h4>Cleaning Check List</h4>
+              <a href="spotless 2.html">Open full list</a>
+            </div>
+            <div class="task-list">
+              <div class="task-item">
+                <div class="task-main">
+                  <div class="check">✓</div>
+                  <div>
+                    <strong>Kitchen deep clean</strong>
+                    <span>Wipe surfaces, sanitize sink, mop floors</span>
+                  </div>
+                </div>
+                <div class="status">Done</div>
+              </div>
+              <div class="task-item">
+                <div class="task-main">
+                  <div class="check">•</div>
+                  <div>
+                    <strong>Bathroom reset</strong>
+                    <span>Mirrors, fixtures, counters, and towels</span>
+                  </div>
+                </div>
+                <div class="status pending">In Progress</div>
+              </div>
+              <div class="task-item">
+                <div class="task-main">
+                  <div class="check">○</div>
+                  <div>
+                    <strong>Bedroom finishing touches</strong>
+                    <span>Dusting, linens, and final vacuum pass</span>
+                  </div>
+                </div>
+                <div class="status pending">Queued</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h4>Upcoming Schedule</h4>
+              <a href="Spotless_Booking.html">View calendar</a>
+            </div>
+            <div class="schedule-list">
+              <div class="schedule-item">
+                <div class="schedule-main">
+                  <div class="time-chip">9:00</div>
+                  <div>
+                    <strong>Jones Residence</strong>
+                    <span>Recurring bi-weekly clean</span>
+                  </div>
+                </div>
+                <div class="status">Confirmed</div>
+              </div>
+              <div class="schedule-item">
+                <div class="schedule-main">
+                  <div class="time-chip">1:30</div>
+                  <div>
+                    <strong>New Client Walkthrough</strong>
+                    <span>Estimate visit and custom quote</span>
+                  </div>
+                </div>
+                <div class="status pending">Pending</div>
+              </div>
+              <div class="schedule-item">
+                <div class="schedule-main">
+                  <div class="time-chip">4:00</div>
+                  <div>
+                    <strong>Office Refresh</strong>
+                    <span>Evening tidy and supplies check</span>
+                  </div>
+                </div>
+                <div class="status">Confirmed</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
