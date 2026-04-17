@@ -584,53 +584,38 @@
       };
     }
 
-    function loadState(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(!raw) return defaultState();
-        const parsed = JSON.parse(raw);
-        return {
-          jobName: parsed.jobName || '',
-          jobAddress: parsed.jobAddress || '',
-          jobHourlyRate: parsed.jobHourlyRate || '',
-          jobNotes: parsed.jobNotes || '',
-          clientName: parsed.clientName || '',
-          signatureDate: parsed.signatureDate || '',
-          signatureDataUrl: parsed.signatureDataUrl || '',
-          rooms: Array.isArray(parsed.rooms) ? parsed.rooms : []
-        };
-      }catch(error){
-        console.error('Unable to load saved planner data:', error);
-        return {
-  jobName: parsed.jobName || '',
-  jobAddress: parsed.jobAddress || '',
-  jobHourlyRate: parsed.jobHourlyRate || '',
-  jobNotes: parsed.jobNotes || '',
-  clientName: parsed.clientName || '',
-  signatureDate: parsed.signatureDate || '',
-  signatureDataUrl: parsed.signatureDataUrl || '',
-  rooms: Array.isArray(parsed.rooms)
-    ? parsed.rooms.map(room => ({
-        id: room.id || crypto.randomUUID(),
-        roomType: room.roomType || '',
-        roomName: room.roomName || '',
-        cleaningType: room.cleaningType || '',
-        estimatedTime: room.estimatedTime || '',
-        roomDetails: room.roomDetails || ''
-      }))
-    : []
-};
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
 
-    function newRoom(data = {}){
-  return {
-    id: data.id || crypto.randomUUID(),
-    roomType: data.roomType || '',
-    roomName: data.roomName || '',
-    cleaningType: data.cleaningType || '',
-    estimatedTime: data.estimatedTime || '',
-    roomDetails: data.roomDetails || ''
-  };
+    const parsed = JSON.parse(raw);
+
+    return {
+      jobName: parsed.jobName || '',
+      jobAddress: parsed.jobAddress || '',
+      jobHourlyRate: parsed.jobHourlyRate || '',
+      jobNotes: parsed.jobNotes || '',
+      clientName: parsed.clientName || '',
+      signatureDate: parsed.signatureDate || '',
+      signatureDataUrl: parsed.signatureDataUrl || '',
+      rooms: Array.isArray(parsed.rooms)
+        ? parsed.rooms.map(room => ({
+            id: room.id || crypto.randomUUID(),
+            roomType: room.roomType || '',
+            roomName: room.roomName || '',
+            cleaningType: room.cleaningType || '',
+            estimatedTime: room.estimatedTime || '',
+            roomDetails: room.roomDetails || ''
+          }))
+        : []
+    };
+  }catch(error){
+    console.error('Unable to load saved planner data:', error);
+    return defaultState();
+  }
 }
+	  let state = loadState();
 
     function formatCurrency(value){
       return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(value || 0);
