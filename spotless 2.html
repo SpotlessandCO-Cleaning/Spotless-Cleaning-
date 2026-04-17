@@ -301,12 +301,29 @@
     }
 
     .task-item input[type="checkbox"]{
-      width:20px;
-      height:20px;
-      margin-top:1px;
-      accent-color:var(--forest);
-      flex:0 0 auto;
-    }
+  appearance:none;
+  -webkit-appearance:none;
+  width:22px;
+  height:22px;
+  border:2px solid #31443a;
+  border-radius:6px;
+  background:#fff;
+  cursor:pointer;
+  position:relative;
+}
+
+.task-item input[type="checkbox"]:checked{
+  background:#31443a;
+}
+
+.task-item input[type="checkbox"]:checked::after{
+  content:"✓";
+  color:#fff;
+  font-size:14px;
+  position:absolute;
+  top:0;
+  left:4px;
+}
 
     .task-text{
       font-size:.95rem;
