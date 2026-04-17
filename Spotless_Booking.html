@@ -586,6 +586,71 @@
       summarySelectedDate: document.getElementById('summarySelectedDate'),
       summarySelectedJobs: document.getElementById('summarySelectedJobs')
     };
+    
+    const QUOTE_STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v4';
+
+function loadQuotePlanner() {
+  try {
+    return JSON.parse(localStorage.getItem(QUOTE_STORAGE_KEY)) || {};
+  } catch (error) {
+    console.error('Failed to load quote planner data:', error);
+    return {};
+  }
+}
+    function prefillFromQuotePlanner() {
+  const quote = loadQuotePlanner();
+  const rooms = Array.isArray(quote.rooms) ? quote.rooms : [];
+
+  if (!quote.jobName && !quote.clientName && !quote.jobAddress && !quote.jobHourlyRate && !rooms.length) {
+    return;
+  }
+
+  if (!els.clientName.value) {
+    els.clientName.value = (quote.clientName || quote.jobName || '').trim();
+  }
+
+  if (!els.propertyAddress.value) {
+    els.propertyAddress.value = (quote.jobAddress || '').trim();
+  }
+
+  if (!els.quotedPrice.value) {
+    const totalMinutes = rooms.reduce((sum, room) => {
+      const mins = parseFloat(room.estimatedTime);
+      return sum + (Number.isFinite(mins) ? mins : 0);
+    }, 0);
+
+    const hourlyRate = parseFloat(quote.jobHourlyRate);
+    const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
+    const estimatedPrice = (totalMinutes / 60) * safeRate;
+
+    if (estimatedPrice > 0) {
+      els.quotedPrice.value = estimatedPrice.toFixed(2);
+    }
+  }
+
+  if (!els.bookingNotes.value) {
+    const roomSummary = rooms.map((room, index) => {
+      const roomLabel = room.roomName || room.roomType || `Room ${index + 1}`;
+      const cleanType = room.cleaningType || 'Cleaning type not set';
+      const time = room.estimatedTime || 0;
+      return `${index + 1}. ${roomLabel} — ${cleanType} — ${time} min`;
+    }).join('\n');
+
+    const notes = [
+      quote.jobNotes || '',
+      roomSummary ? '\nQuote Rooms:\n' + roomSummary : ''
+    ].join('').trim();
+
+    els.bookingNotes.value = notes;
+  }
+
+  if (!els.serviceType.value || els.serviceType.value === 'Standard Clean') {
+    const firstRoom = rooms[0];
+    if (firstRoom?.cleaningType) {
+      els.serviceType.value = firstRoom.cleaningType;
+    }
+  }
+}
 
     function todayIso(){
       const now = new Date();
@@ -1021,7 +1086,8 @@
     });
 
     resetForm();
-    render();
+prefillFromQuotePlanner();
+render();
   </script>
 </body>
 </html>
