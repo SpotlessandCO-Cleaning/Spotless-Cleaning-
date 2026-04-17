@@ -947,129 +947,40 @@ function addWrappedText(doc, text, x, y, maxWidth, lineHeight){
   return y;
 }
 
-async function generateChecklistPdfBlob(){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-
-  const margin = 15;
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const usableWidth = pageWidth - (margin * 2);
-  const photoGap = 6;
-  const photoWidth = (usableWidth - photoGap) / 2;
-  const photoHeight = 50;
-
-  let y = 18;
-
-  function ensureSpace(heightNeeded){
-    if(y + heightNeeded > pageHeight - 15){
-      doc.addPage();
-      y = 18;
-    }
+async function shareChecklistPdf(){
+  if(!state.rooms.length){
+    alert('Load a checklist before sharing.');
+    return;
   }
 
-  function addWrapped(text, x, maxWidth, lineHeight = 6){
-    const lines = doc.splitTextToSize(text, maxWidth);
-    lines.forEach(line => {
-      ensureSpace(lineHeight);
-      doc.text(line, x, y);
-      y += lineHeight;
-    });
-  }
+  try{
+    const blob = await generateChecklistPdfBlob();
+    const fileName = `${safeFileName(state.jobName || 'cleaning_checklist')}.pdf`;
+    const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
 
-  function getImageType(dataUrl){
-    if(typeof dataUrl !== 'string') return 'JPEG';
-    if(dataUrl.startsWith('data:image/png')) return 'PNG';
-    return 'JPEG';
-  }
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.text('Spotless & Co Cleaning Checklist', margin, y);
-  y += 10;
-
-  const totalTasks = state.rooms.reduce((sum, room) => sum + room.tasks.length, 0);
-  const completedTasks = state.rooms.reduce((sum, room) => {
-    return sum + room.tasks.filter(task => task.done).length;
-  }, 0);
-  const completion = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-
-  addWrapped(`Client / Job Name: ${state.jobName || 'Not provided'}`, margin, usableWidth);
-  addWrapped(`Address / Location: ${state.jobAddress || 'Not provided'}`, margin, usableWidth);
-  addWrapped(`Job Status: ${state.jobStatus || 'Not Started'}`, margin, usableWidth);
-  addWrapped(`Rooms: ${state.rooms.length}`, margin, usableWidth);
-  addWrapped(`Completed Tasks: ${completedTasks} of ${totalTasks}`, margin, usableWidth);
-  addWrapped(`Completion: ${completion}%`, margin, usableWidth);
-
-  y += 4;
-
-  state.rooms.forEach((room, roomIndex) => {
-    ensureSpace(20);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.text(`${roomIndex + 1}. ${room.roomName}`, margin, y);
-    y += 7;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-
-    addWrapped(`Type: ${room.cleaningType || 'Not specified'}`, margin, usableWidth);
-    addWrapped(`Estimated Time: ${room.estimatedTime || 0} min`, margin, usableWidth);
-
-    const roomDone = room.tasks.filter(task => task.done).length;
-    const roomTotal = room.tasks.length;
-    const roomPercent = roomTotal ? Math.round((roomDone / roomTotal) * 100) : 0;
-    addWrapped(`Progress: ${roomDone}/${roomTotal} (${roomPercent}%)`, margin, usableWidth);
-
-    y += 1;
-    addWrapped('Tasks:', margin, usableWidth);
-
-    room.tasks.forEach(task => {
-      addWrapped(`  ${task.done ? '[x]' : '[ ]'} ${task.text}`, margin, usableWidth);
-    });
-
-    if(room.notes && room.notes.trim()){
-      y += 2;
-      addWrapped('Notes:', margin, usableWidth);
-      room.notes
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(Boolean)
-        .forEach(line => addWrapped(`  - ${line}`, margin, usableWidth));
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      await navigator.share({
+        title: state.jobName || 'Cleaning Checklist',
+        text: 'Cleaning checklist PDF',
+        files: [pdfFile]
+      });
+      return;
     }
 
-    const photos = room.photos.filter(Boolean);
+    const url = URL.createObjectURL(pdfFile);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
 
-    if(photos.length){
-      y += 4;
-      ensureSpace(photoHeight + 12);
-
-      doc.setFont('helvetica', 'bold');
-      doc.text('Completion Photos:', margin, y);
-      y += 5;
-
-      if(photos.length === 1){
-        const imgType = getImageType(photos[0]);
-        doc.addImage(photos[0], imgType, margin, y, usableWidth * 0.75, photoHeight);
-        y += photoHeight + 8;
-      } else {
-        const imgType1 = getImageType(photos[0]);
-        const imgType2 = getImageType(photos[1]);
-
-        doc.addImage(photos[0], imgType1, margin, y, photoWidth, photoHeight);
-        doc.addImage(photos[1], imgType2, margin + photoWidth + photoGap, y, photoWidth, photoHeight);
-        y += photoHeight + 8;
-      }
-    }
-
-    y += 4;
-  });
-
-  return doc.output('blob');
+    alert('Sharing is not supported on this device/browser, so the PDF was downloaded instead.');
+  }catch(error){
+    console.error('PDF share failed:', error);
+    alert(`Unable to create or share the PDF: ${error.message}`);
+  }
 }
     function render(){
       els.roomsContainer.innerHTML = '';
