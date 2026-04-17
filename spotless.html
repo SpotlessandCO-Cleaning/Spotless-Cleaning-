@@ -161,11 +161,9 @@
     }
 
     .quick-actions,
-    .toolbar{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-    }
+.toolbar{
+  grid-template-columns:repeat(3,1fr);
+}
 
     .btn{
       border:none;
@@ -388,9 +386,11 @@
         </div>
       </div>
 
-      <div class="quick-actions screen-only" style="margin-top:14px;">
-        <button class="btn btn-primary" id="addRoomBtn">+ Add Room</button>
-        <button class="btn btn-soft" id="clearAllBtn">Clear All</button>
+		  <div class="quick-actions screen-only" style="margin-top:14px;">
+  <button class="btn btn-primary" id="addRoomBtn">+ Add Room</button>
+  <button class="btn btn-soft" id="clearAllBtn">Clear All</button>
+  <a href="index.html" class="btn btn-soft" style="text-decoration:none;display:grid;place-items:center;">Return Home</a>
+</div>
       </div>
     </section>
 
@@ -480,8 +480,8 @@
     </section>
   </div>
 
- <template id="roomTemplate">
-  <article class="room-card">
+<template id="roomTemplate">
+  <article class="room-card" data-room-id="">
     <div class="room-head">
       <h3 class="room-title">Room</h3>
       <button class="btn btn-danger remove-room-btn screen-only" type="button">Remove</button>
@@ -496,6 +496,9 @@
           <option value="Bathroom">Bathroom</option>
           <option value="Living Room">Living Room</option>
           <option value="Bedroom">Bedroom</option>
+          <option value="Laundry Room">Laundry Room</option>
+          <option value="Entry / Hallway">Entry / Hallway</option>
+          <option value="Office">Office</option>
           <option value="Commercial Space">Commercial Space</option>
           <option value="Custom">Custom</option>
         </select>
@@ -503,7 +506,14 @@
 
       <div class="field">
         <label>Room Name</label>
-        <input type="text" class="room-name" placeholder="Example: Master Bathroom" />
+        <select class="room-name-select">
+          <option value="">Select Room Name</option>
+        </select>
+      </div>
+
+      <div class="field custom-room-name-wrap" style="display:none;">
+        <label>Custom Room Name</label>
+        <input type="text" class="room-name-custom" placeholder="Enter custom room name" />
       </div>
 
       <div class="field">
@@ -523,8 +533,11 @@
         <label>Estimated Time (minutes)</label>
         <select class="estimated-time">
           <option value="">Select Estimated Time</option>
+          <option value="15">15</option>
           <option value="30">30</option>
+          <option value="45">45</option>
           <option value="60">60</option>
+          <option value="75">75</option>
           <option value="90">90</option>
           <option value="120">120</option>
           <option value="150">150</option>
@@ -534,265 +547,839 @@
 
       <div class="field" style="grid-column:1 / -1;">
         <label>Room Details / Tasks</label>
-        <textarea class="room-details" placeholder="List the cleaning tasks for this room"></textarea>
+        <textarea class="room-details" placeholder="Tasks will auto-fill based on room type and cleaning type"></textarea>
+      </div>
+
+      <div class="field" style="grid-column:1 / -1;">
+        <label>Room Notes</label>
+        <textarea class="room-notes" placeholder="Damage, stains, heavy buildup, pet hair, access notes, special requests"></textarea>
       </div>
     </div>
   </article>
 </template>
 
-  <script>
-    const STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v3';
+<script>
+  const STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v4';
 
-    const els = {
-      jobName: document.getElementById('jobName'),
-      jobAddress: document.getElementById('jobAddress'),
-      jobHourlyRate: document.getElementById('jobHourlyRate'),
-      jobNotes: document.getElementById('jobNotes'),
-      addRoomBtn: document.getElementById('addRoomBtn'),
-      clearAllBtn: document.getElementById('clearAllBtn'),
-      exportCsvBtn: document.getElementById('exportCsvBtn'),
-      pdfBtn: document.getElementById('pdfBtn'),
-      shareBtn: document.getElementById('shareBtn'),
-      copySummaryBtn: document.getElementById('copySummaryBtn'),
-      roomsContainer: document.getElementById('roomsContainer'),
-      roomTemplate: document.getElementById('roomTemplate'),
-      totalRooms: document.getElementById('totalRooms'),
-      totalTime: document.getElementById('totalTime'),
-      displayRate: document.getElementById('displayRate'),
-      estimatedPrice: document.getElementById('estimatedPrice'),
-      printTotalRooms: document.getElementById('printTotalRooms'),
-      printTotalTime: document.getElementById('printTotalTime'),
-      printDisplayRate: document.getElementById('printDisplayRate'),
-      printEstimatedPrice: document.getElementById('printEstimatedPrice'),
-      clientName: document.getElementById('clientName'),
-      signatureDate: document.getElementById('signatureDate'),
-      signaturePad: document.getElementById('signaturePad'),
-      clearSignatureBtn: document.getElementById('clearSignatureBtn'),
-      saveSignatureBtn: document.getElementById('saveSignatureBtn')
-    };
+  const ROOM_NAME_OPTIONS = {
+    'Kitchen / Dining Room': ['Kitchen', 'Dining Room', 'Kitchen / Dining', 'Breakfast Nook', 'Pantry', 'Butler Pantry', 'Custom'],
+    'Bathroom': ['Powder Room', 'Main Bathroom', 'Ensuite', 'Guest Bathroom', 'Basement Bathroom', 'Custom'],
+    'Living Room': ['Living Room', 'Family Room', 'Great Room', 'Rec Room', 'Basement Living Area', 'Custom'],
+    'Bedroom': ['Primary Bedroom', 'Bedroom 2', 'Bedroom 3', 'Guest Bedroom', 'Nursery', 'Custom'],
+    'Laundry Room': ['Laundry Room', 'Mud Room', 'Laundry / Mud Room', 'Custom'],
+    'Entry / Hallway': ['Front Entry', 'Back Entry', 'Main Hallway', 'Upstairs Hallway', 'Staircase', 'Custom'],
+    'Office': ['Office', 'Den', 'Study', 'Meeting Room', 'Reception', 'Custom'],
+    'Commercial Space': ['Office Area', 'Washroom', 'Break Room', 'Lobby', 'Showroom', 'Storage Room', 'Custom'],
+    'Custom': ['Custom']
+  };
 
-    function defaultState(){
-      return {
-        jobName: '',
-        jobAddress: '',
-        jobHourlyRate: '',
-        jobNotes: '',
-        clientName: '',
-        signatureDate: '',
-        signatureDataUrl: '',
-        rooms: []
-      };
+  const TASK_LIBRARY = {
+    'Kitchen / Dining Room': {
+      'Standard Clean': {
+        minutes: '60',
+        tasks: [
+          'Wipe counters and backsplash',
+          'Clean exterior of appliances',
+          'Spot clean cupboard fronts',
+          'Sanitize sink and faucet',
+          'Wipe table and chairs',
+          'Dust reachable surfaces',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Deep Clean': {
+        minutes: '90',
+        tasks: [
+          'Everything in Standard Clean',
+          'Detail cabinet fronts and handles',
+          'Clean microwave inside and out',
+          'Detail small appliances exterior',
+          'Degrease trouble spots',
+          'Baseboards and trim wiped',
+          'Detailed floor edge cleaning'
+        ]
+      },
+      'Move In / Move Out': {
+        minutes: '120',
+        tasks: [
+          'Inside and outside cabinets where accessible',
+          'Inside fridge if empty',
+          'Inside oven if requested',
+          'Sanitize sink and surfaces',
+          'Detailed appliance exterior cleaning',
+          'Baseboards, trim, switches, handles',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Post Construction': {
+        minutes: '120',
+        tasks: [
+          'Remove dust from counters and surfaces',
+          'Wipe cabinet fronts',
+          'Clean light construction dust from fixtures',
+          'Clean sink and faucet',
+          'Vacuum debris and edges',
+          'Wet wipe and mop floors',
+          'Spot clean smudges and fingerprints'
+        ]
+      },
+      'Disinfection': {
+        minutes: '60',
+        tasks: [
+          'Disinfect counters',
+          'Disinfect appliance handles',
+          'Disinfect sink and faucet',
+          'Disinfect table and chairs',
+          'Disinfect switches and touch points',
+          'Vacuum and mop floors'
+        ]
+      }
+    },
+    'Bathroom': {
+      'Standard Clean': {
+        minutes: '45',
+        tasks: [
+          'Clean and sanitize toilet',
+          'Clean sink and vanity',
+          'Wipe mirrors',
+          'Clean tub / shower surfaces',
+          'Wipe fixtures',
+          'Empty garbage',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Deep Clean': {
+        minutes: '60',
+        tasks: [
+          'Everything in Standard Clean',
+          'Detail grout and buildup areas',
+          'Detail shower tracks / edges',
+          'Wipe baseboards and trim',
+          'Clean behind toilet where accessible',
+          'Detail fixtures and hardware'
+        ]
+      },
+      'Move In / Move Out': {
+        minutes: '75',
+        tasks: [
+          'Sanitize all bathroom fixtures',
+          'Detail vanity inside/out if empty',
+          'Detail shower / tub',
+          'Clean mirrors and glass',
+          'Baseboards, trim, switches, handles',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Post Construction': {
+        minutes: '60',
+        tasks: [
+          'Remove construction dust',
+          'Wipe vanity and fixtures',
+          'Clean mirrors and glass',
+          'Sanitize toilet, sink, tub / shower',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Disinfection': {
+        minutes: '45',
+        tasks: [
+          'Disinfect toilet',
+          'Disinfect sink and vanity',
+          'Disinfect tub / shower touch points',
+          'Disinfect switches, handles, and fixtures',
+          'Mop with disinfecting solution'
+        ]
+      }
+    },
+    'Living Room': {
+      'Standard Clean': {
+        minutes: '30',
+        tasks: [
+          'Dust reachable surfaces',
+          'Wipe tables and visible surfaces',
+          'Tidy cushions and soft furnishings',
+          'Spot clean glass surfaces',
+          'Vacuum floors / rugs',
+          'Mop hard floors if applicable'
+        ]
+      },
+      'Deep Clean': {
+        minutes: '45',
+        tasks: [
+          'Everything in Standard Clean',
+          'Detail baseboards and trim',
+          'Dust vents and edges',
+          'Detail under accessible furniture edges',
+          'Extra attention to buildup and corners'
+        ]
+      },
+      'Move In / Move Out': {
+        minutes: '60',
+        tasks: [
+          'Dust all reachable surfaces',
+          'Wipe shelves and ledges',
+          'Spot clean interior glass where accessible',
+          'Baseboards, trim, switches, handles',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Post Construction': {
+        minutes: '60',
+        tasks: [
+          'Remove dust from all reachable surfaces',
+          'Wipe trim and ledges',
+          'Spot clean fingerprints and smudges',
+          'Vacuum edges and floors',
+          'Mop hard floors'
+        ]
+      },
+      'Disinfection': {
+        minutes: '30',
+        tasks: [
+          'Disinfect high-touch surfaces',
+          'Disinfect switches, remotes, handles',
+          'Wipe tables and hard surfaces',
+          'Vacuum and mop floors'
+        ]
+      }
+    },
+    'Bedroom': {
+      'Standard Clean': {
+        minutes: '30',
+        tasks: [
+          'Dust reachable surfaces',
+          'Wipe furniture tops',
+          'Make / reset bed if requested',
+          'Vacuum floors / rugs',
+          'Mop hard floors if applicable'
+        ]
+      },
+      'Deep Clean': {
+        minutes: '45',
+        tasks: [
+          'Everything in Standard Clean',
+          'Detail baseboards and trim',
+          'Dust vents, corners, and edges',
+          'Extra detail around furniture edges'
+        ]
+      },
+      'Move In / Move Out': {
+        minutes: '45',
+        tasks: [
+          'Dust all reachable surfaces',
+          'Wipe shelving and ledges',
+          'Baseboards, trim, switches, handles',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Post Construction': {
+        minutes: '45',
+        tasks: [
+          'Remove construction dust',
+          'Wipe reachable surfaces',
+          'Vacuum dust from edges and floors',
+          'Mop hard floors if applicable'
+        ]
+      },
+      'Disinfection': {
+        minutes: '30',
+        tasks: [
+          'Disinfect high-touch surfaces',
+          'Disinfect switches, handles, and knobs',
+          'Vacuum and mop floors'
+        ]
+      }
+    },
+    'Laundry Room': {
+      'Standard Clean': {
+        minutes: '20',
+        tasks: [
+          'Wipe machine exteriors',
+          'Dust reachable surfaces',
+          'Sanitize sink if present',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Deep Clean': {
+        minutes: '30',
+        tasks: [
+          'Everything in Standard Clean',
+          'Detail shelf surfaces',
+          'Detail baseboards and corners',
+          'Extra dust removal around machines'
+        ]
+      },
+      'Move In / Move Out': {
+        minutes: '35',
+        tasks: [
+          'Wipe cabinets / shelves if accessible',
+          'Clean machine exteriors',
+          'Detail trim and switches',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Post Construction': {
+        minutes: '30',
+        tasks: [
+          'Remove dust from surfaces',
+          'Wipe shelves and machine exteriors',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Disinfection': {
+        minutes: '20',
+        tasks: [
+          'Disinfect high-touch surfaces',
+          'Disinfect handles and switches',
+          'Mop with disinfecting solution'
+        ]
+      }
+    },
+    'Entry / Hallway': {
+      'Standard Clean': {
+        minutes: '20',
+        tasks: [
+          'Dust reachable surfaces',
+          'Spot clean door glass / visible marks',
+          'Vacuum runners / floors',
+          'Mop hard floors'
+        ]
+      },
+      'Deep Clean': {
+        minutes: '30',
+        tasks: [
+          'Everything in Standard Clean',
+          'Detail trim and baseboards',
+          'Extra edge and corner cleaning',
+          'Wipe doors and touch points'
+        ]
+      },
+      'Move In / Move Out': {
+        minutes: '35',
+        tasks: [
+          'Dust all reachable surfaces',
+          'Wipe doors, trim, and ledges',
+          'Baseboards, switches, handles',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Post Construction': {
+        minutes: '30',
+        tasks: [
+          'Remove construction dust',
+          'Wipe trim and surfaces',
+          'Vacuum edges and floors',
+          'Mop hard floors'
+        ]
+      },
+      'Disinfection': {
+        minutes: '20',
+        tasks: [
+          'Disinfect handles and switches',
+          'Wipe high-touch surfaces',
+          'Mop with disinfecting solution'
+        ]
+      }
+    },
+    'Office': {
+      'Standard Clean': {
+        minutes: '30',
+        tasks: [
+          'Dust reachable surfaces',
+          'Wipe desks and hard surfaces',
+          'Empty garbage if requested',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Deep Clean': {
+        minutes: '45',
+        tasks: [
+          'Everything in Standard Clean',
+          'Detail trim and baseboards',
+          'Extra dusting of edges and corners',
+          'Wipe doors and touch points'
+        ]
+      },
+      'Move In / Move Out': {
+        minutes: '60',
+        tasks: [
+          'Dust reachable surfaces',
+          'Wipe shelving and ledges',
+          'Baseboards, trim, switches, handles',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Post Construction': {
+        minutes: '60',
+        tasks: [
+          'Remove construction dust',
+          'Wipe desks, ledges, and trim',
+          'Vacuum floors and corners',
+          'Mop hard floors'
+        ]
+      },
+      'Disinfection': {
+        minutes: '30',
+        tasks: [
+          'Disinfect desks and touch points',
+          'Disinfect switches, handles, and shared surfaces',
+          'Vacuum and mop floors'
+        ]
+      }
+    },
+    'Commercial Space': {
+      'Standard Clean': {
+        minutes: '60',
+        tasks: [
+          'Dust reachable surfaces',
+          'Wipe counters and shared surfaces',
+          'Spot clean glass where accessible',
+          'Empty garbage if requested',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Deep Clean': {
+        minutes: '90',
+        tasks: [
+          'Everything in Standard Clean',
+          'Detail baseboards and trim',
+          'Extra edge and corner cleaning',
+          'High-touch point detailing'
+        ]
+      },
+      'Move In / Move Out': {
+        minutes: '120',
+        tasks: [
+          'Dust all reachable surfaces',
+          'Wipe ledges, trim, and fixtures',
+          'Detail touch points and doors',
+          'Vacuum and mop floors'
+        ]
+      },
+      'Post Construction': {
+        minutes: '120',
+        tasks: [
+          'Remove construction dust throughout space',
+          'Wipe fixtures and surfaces',
+          'Vacuum edges, debris, and floors',
+          'Mop hard floors'
+        ]
+      },
+      'Disinfection': {
+        minutes: '60',
+        tasks: [
+          'Disinfect shared surfaces',
+          'Disinfect handles, switches, and touch points',
+          'Vacuum and mop floors'
+        ]
+      }
     }
+  };
 
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return defaultState();
+  const els = {
+    jobName: document.getElementById('jobName'),
+    jobAddress: document.getElementById('jobAddress'),
+    jobHourlyRate: document.getElementById('jobHourlyRate'),
+    jobNotes: document.getElementById('jobNotes'),
+    addRoomBtn: document.getElementById('addRoomBtn'),
+    clearAllBtn: document.getElementById('clearAllBtn'),
+    exportCsvBtn: document.getElementById('exportCsvBtn'),
+    pdfBtn: document.getElementById('pdfBtn'),
+    shareBtn: document.getElementById('shareBtn'),
+    copySummaryBtn: document.getElementById('copySummaryBtn'),
+    roomsContainer: document.getElementById('roomsContainer'),
+    roomTemplate: document.getElementById('roomTemplate'),
+    totalRooms: document.getElementById('totalRooms'),
+    totalTime: document.getElementById('totalTime'),
+    displayRate: document.getElementById('displayRate'),
+    estimatedPrice: document.getElementById('estimatedPrice'),
+    printTotalRooms: document.getElementById('printTotalRooms'),
+    printTotalTime: document.getElementById('printTotalTime'),
+    printDisplayRate: document.getElementById('printDisplayRate'),
+    printEstimatedPrice: document.getElementById('printEstimatedPrice'),
+    clientName: document.getElementById('clientName'),
+    signatureDate: document.getElementById('signatureDate'),
+    signaturePad: document.getElementById('signaturePad'),
+    clearSignatureBtn: document.getElementById('clearSignatureBtn'),
+    saveSignatureBtn: document.getElementById('saveSignatureBtn')
+  };
 
-    const parsed = JSON.parse(raw);
-
+  function defaultState(){
     return {
-      jobName: parsed.jobName || '',
-      jobAddress: parsed.jobAddress || '',
-      jobHourlyRate: parsed.jobHourlyRate || '',
-      jobNotes: parsed.jobNotes || '',
-      clientName: parsed.clientName || '',
-      signatureDate: parsed.signatureDate || '',
-      signatureDataUrl: parsed.signatureDataUrl || '',
-      rooms: Array.isArray(parsed.rooms)
-        ? parsed.rooms.map(room => ({
-            id: room.id || crypto.randomUUID(),
-            roomType: room.roomType || '',
-            roomName: room.roomName || '',
-            cleaningType: room.cleaningType || '',
-            estimatedTime: room.estimatedTime || '',
-            roomDetails: room.roomDetails || ''
-          }))
-        : []
+      jobName: '',
+      jobAddress: '',
+      jobHourlyRate: '',
+      jobNotes: '',
+      clientName: '',
+      signatureDate: '',
+      signatureDataUrl: '',
+      rooms: []
     };
-  }catch(error){
-    console.error('Unable to load saved planner data:', error);
-    return defaultState();
   }
-}
-	  let state = loadState();
 
-    function formatCurrency(value){
-      return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(value || 0);
+  function newRoom(roomData = {}){
+    return {
+      id: roomData.id || (crypto.randomUUID ? crypto.randomUUID() : `room_${Date.now()}_${Math.random().toString(16).slice(2)}`),
+      roomType: roomData.roomType || '',
+      roomName: roomData.roomName || '',
+      cleaningType: roomData.cleaningType || '',
+      estimatedTime: roomData.estimatedTime || '',
+      roomDetails: roomData.roomDetails || '',
+      roomNotes: roomData.roomNotes || '',
+      lastAutoDetails: roomData.lastAutoDetails || '',
+      lastAutoTime: roomData.lastAutoTime || ''
+    };
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+
+      return {
+        jobName: parsed.jobName || '',
+        jobAddress: parsed.jobAddress || '',
+        jobHourlyRate: parsed.jobHourlyRate || '',
+        jobNotes: parsed.jobNotes || '',
+        clientName: parsed.clientName || '',
+        signatureDate: parsed.signatureDate || '',
+        signatureDataUrl: parsed.signatureDataUrl || '',
+        rooms: Array.isArray(parsed.rooms)
+          ? parsed.rooms.map(room => newRoom(room))
+          : []
+      };
+    }catch(error){
+      console.error('Unable to load saved planner data:', error);
+      return defaultState();
+    }
+  }
+
+  let state = loadState();
+
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function formatCurrency(value){
+    return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(value || 0);
+  }
+
+  function getRoomNameOptions(roomType){
+    return ROOM_NAME_OPTIONS[roomType] || ['Custom'];
+  }
+
+  function populateRoomNameSelect(selectEl, roomType, selectedValue = ''){
+    const options = getRoomNameOptions(roomType);
+    selectEl.innerHTML = '<option value="">Select Room Name</option>';
+
+    options.forEach(optionValue => {
+      const option = document.createElement('option');
+      option.value = optionValue;
+      option.textContent = optionValue;
+      if(optionValue === selectedValue){
+        option.selected = true;
+      }
+      selectEl.appendChild(option);
+    });
+
+    if(selectedValue && !options.includes(selectedValue)){
+      const customOption = document.createElement('option');
+      customOption.value = selectedValue;
+      customOption.textContent = selectedValue;
+      customOption.selected = true;
+      selectEl.appendChild(customOption);
+    }
+  }
+
+  function getAutoPlan(roomType, cleaningType){
+    if(!roomType || !cleaningType) return null;
+    const roomSet = TASK_LIBRARY[roomType];
+    if(!roomSet) return null;
+    const plan = roomSet[cleaningType];
+    if(!plan) return null;
+    return {
+      estimatedTime: plan.minutes,
+      roomDetails: plan.tasks.join('\n')
+    };
+  }
+
+  function maybeAutofillRoom(id){
+    const room = state.rooms.find(item => item.id === id);
+    if(!room) return;
+
+    const autoPlan = getAutoPlan(room.roomType, room.cleaningType);
+    if(!autoPlan) return;
+
+    const detailsCanReplace =
+      !room.roomDetails ||
+      room.roomDetails === room.lastAutoDetails;
+
+    const timeCanReplace =
+      !room.estimatedTime ||
+      room.estimatedTime === room.lastAutoTime;
+
+    if(detailsCanReplace){
+      room.roomDetails = autoPlan.roomDetails;
+      room.lastAutoDetails = autoPlan.roomDetails;
     }
 
-    function addRoom(roomData = {}){
-      state.rooms.push(newRoom(roomData));
-      saveState();
-      render();
+    if(timeCanReplace){
+      room.estimatedTime = autoPlan.estimatedTime;
+      room.lastAutoTime = autoPlan.estimatedTime;
     }
 
-    function removeRoom(id){
-      state.rooms = state.rooms.filter(room => room.id !== id);
-      saveState();
-      render();
-    }
+    saveState();
+  }
 
-    function updateRoom(id, patch){
-      const room = state.rooms.find(item => item.id === id);
-      if(!room) return;
-      Object.assign(room, patch);
-      saveState();
-      updateStats();
-    }
+  function addRoom(roomData = {}){
+    const room = newRoom(roomData);
+    state.rooms.push(room);
+    saveState();
+    render();
 
-    function updateStats(){
-      const roomCount = state.rooms.length;
-      const totalMinutes = state.rooms.reduce((sum, room) => {
-        const value = parseFloat(room.estimatedTime);
-        return sum + (Number.isFinite(value) ? value : 0);
-      }, 0);
-      const hourlyRate = parseFloat(state.jobHourlyRate);
-      const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
-      const estimatedPrice = (totalMinutes / 60) * safeRate;
-
-      const totalText = `${totalMinutes} min`;
-      const rateText = formatCurrency(safeRate);
-      const priceText = formatCurrency(estimatedPrice);
-
-      els.totalRooms.textContent = roomCount;
-      els.totalTime.textContent = totalText;
-      els.displayRate.textContent = rateText;
-      els.estimatedPrice.textContent = priceText;
-      if(els.printTotalRooms) els.printTotalRooms.textContent = roomCount;
-      if(els.printTotalTime) els.printTotalTime.textContent = totalText;
-      if(els.printDisplayRate) els.printDisplayRate.textContent = rateText;
-      if(els.printEstimatedPrice) els.printEstimatedPrice.textContent = priceText;
-    }
-
-    function render(){
-  els.jobName.value = state.jobName;
-  els.jobAddress.value = state.jobAddress;
-  els.jobHourlyRate.value = state.jobHourlyRate;
-  els.jobNotes.value = state.jobNotes;
-  els.clientName.value = state.clientName;
-  els.signatureDate.value = state.signatureDate;
-  els.roomsContainer.innerHTML = '';
-
-  if(state.rooms.length === 0){
-    els.roomsContainer.innerHTML = '<div class="empty">No rooms added yet. Tap “Add Room” to start building your quote.</div>';
-  } else {
-    state.rooms.forEach((room, index) => {
-      const fragment = els.roomTemplate.content.cloneNode(true);
-
-      const title = fragment.querySelector('.room-title');
-      const roomTypeSelect = fragment.querySelector('.room-type');
-      const roomNameInput = fragment.querySelector('.room-name');
-      const cleaningTypeSelect = fragment.querySelector('.cleaning-type');
-      const estimatedTimeSelect = fragment.querySelector('.estimated-time');
-      const roomDetailsTextarea = fragment.querySelector('.room-details');
-      const removeBtn = fragment.querySelector('.remove-room-btn');
-
-      title.textContent = room.roomName.trim() || room.roomType.trim() || `Room ${index + 1}`;
-
-      roomTypeSelect.value = room.roomType || '';
-      roomNameInput.value = room.roomName || '';
-      cleaningTypeSelect.value = room.cleaningType || '';
-      estimatedTimeSelect.value = room.estimatedTime || '';
-      roomDetailsTextarea.value = room.roomDetails || '';
-
-      roomTypeSelect.addEventListener('change', event => {
-        const selectedType = event.target.value;
-
-        const patch = { roomType: selectedType };
-
-        if ((!room.roomName || !room.roomName.trim()) && selectedType && selectedType !== 'Custom') {
-          patch.roomName = selectedType;
-          roomNameInput.value = selectedType;
-          title.textContent = selectedType;
-        }
-
-        updateRoom(room.id, patch);
-
-        const updatedRoom = state.rooms.find(item => item.id === room.id);
-        title.textContent =
-          (updatedRoom?.roomName || '').trim() ||
-          (updatedRoom?.roomType || '').trim() ||
-          `Room ${index + 1}`;
-      });
-
-      roomNameInput.addEventListener('input', event => {
-        const value = event.target.value;
-        updateRoom(room.id, { roomName: value });
-        title.textContent = value.trim() || roomTypeSelect.value.trim() || `Room ${index + 1}`;
-      });
-
-      cleaningTypeSelect.addEventListener('change', event => {
-        updateRoom(room.id, { cleaningType: event.target.value });
-      });
-
-      estimatedTimeSelect.addEventListener('change', event => {
-        updateRoom(room.id, { estimatedTime: event.target.value });
-      });
-
-      roomDetailsTextarea.addEventListener('input', event => {
-        updateRoom(room.id, { roomDetails: event.target.value });
-      });
-
-      removeBtn.addEventListener('click', () => removeRoom(room.id));
-      els.roomsContainer.appendChild(fragment);
+    requestAnimationFrame(() => {
+      const card = els.roomsContainer.querySelector(`[data-room-id="${room.id}"]`);
+      if(card){
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const firstField = card.querySelector('.room-type');
+        if(firstField) firstField.focus();
+      }
     });
   }
 
-  updateStats();
-}
-    function bindTopFields(){
-      els.jobName.addEventListener('input', event => {
-        state.jobName = event.target.value;
-        saveState();
-      });
+  function removeRoom(id){
+    state.rooms = state.rooms.filter(room => room.id !== id);
+    saveState();
+    render();
+  }
 
-      els.jobAddress.addEventListener('input', event => {
-        state.jobAddress = event.target.value;
-        saveState();
-      });
+  function updateRoom(id, patch, rerender = false){
+    const room = state.rooms.find(item => item.id === id);
+    if(!room) return;
+    Object.assign(room, patch);
+    saveState();
+    if(rerender){
+      render();
+    }else{
+      updateStats();
+    }
+  }
 
-      els.jobHourlyRate.addEventListener('input', event => {
-        state.jobHourlyRate = event.target.value;
-        saveState();
-        updateStats();
-      });
+  function updateStats(){
+    const roomCount = state.rooms.length;
+    const totalMinutes = state.rooms.reduce((sum, room) => {
+      const value = parseFloat(room.estimatedTime);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
 
-      els.jobNotes.addEventListener('input', event => {
-        state.jobNotes = event.target.value;
-        saveState();
-      });
+    const hourlyRate = parseFloat(state.jobHourlyRate);
+    const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
+    const estimatedPrice = (totalMinutes / 60) * safeRate;
 
-      els.clientName.addEventListener('input', event => {
-        state.clientName = event.target.value;
-        saveState();
-      });
+    const totalText = `${totalMinutes} min`;
+    const rateText = formatCurrency(safeRate);
+    const priceText = formatCurrency(estimatedPrice);
 
-      els.signatureDate.addEventListener('input', event => {
-        state.signatureDate = event.target.value;
-        saveState();
+    els.totalRooms.textContent = roomCount;
+    els.totalTime.textContent = totalText;
+    els.displayRate.textContent = rateText;
+    els.estimatedPrice.textContent = priceText;
+
+    if(els.printTotalRooms) els.printTotalRooms.textContent = roomCount;
+    if(els.printTotalTime) els.printTotalTime.textContent = totalText;
+    if(els.printDisplayRate) els.printDisplayRate.textContent = rateText;
+    if(els.printEstimatedPrice) els.printEstimatedPrice.textContent = priceText;
+  }
+
+  function getDisplayRoomTitle(room, index){
+    return room.roomName?.trim() || room.roomType?.trim() || `Room ${index + 1}`;
+  }
+
+  function render(){
+    els.jobName.value = state.jobName;
+    els.jobAddress.value = state.jobAddress;
+    els.jobHourlyRate.value = state.jobHourlyRate;
+    els.jobNotes.value = state.jobNotes;
+    els.clientName.value = state.clientName;
+    els.signatureDate.value = state.signatureDate;
+    els.roomsContainer.innerHTML = '';
+
+    if(state.rooms.length === 0){
+      els.roomsContainer.innerHTML = '<div class="empty">No rooms added yet. Tap “Add Room” to start building your quote.</div>';
+    } else {
+      state.rooms.forEach((room, index) => {
+        const fragment = els.roomTemplate.content.cloneNode(true);
+
+        const card = fragment.querySelector('.room-card');
+        const title = fragment.querySelector('.room-title');
+        const roomTypeSelect = fragment.querySelector('.room-type');
+        const roomNameSelect = fragment.querySelector('.room-name-select');
+        const customRoomNameWrap = fragment.querySelector('.custom-room-name-wrap');
+        const customRoomNameInput = fragment.querySelector('.room-name-custom');
+        const cleaningTypeSelect = fragment.querySelector('.cleaning-type');
+        const estimatedTimeSelect = fragment.querySelector('.estimated-time');
+        const roomDetailsTextarea = fragment.querySelector('.room-details');
+        const roomNotesTextarea = fragment.querySelector('.room-notes');
+        const removeBtn = fragment.querySelector('.remove-room-btn');
+
+        card.dataset.roomId = room.id;
+        title.textContent = getDisplayRoomTitle(room, index);
+
+        roomTypeSelect.value = room.roomType || '';
+        populateRoomNameSelect(roomNameSelect, room.roomType || 'Custom', room.roomName || '');
+
+        const showCustomName = !room.roomName || room.roomName === 'Custom' || !getRoomNameOptions(room.roomType).includes(room.roomName);
+        customRoomNameWrap.style.display = showCustomName ? 'block' : 'none';
+        customRoomNameInput.value = showCustomName && room.roomName !== 'Custom' ? room.roomName : '';
+
+        cleaningTypeSelect.value = room.cleaningType || '';
+        estimatedTimeSelect.value = room.estimatedTime || '';
+        roomDetailsTextarea.value = room.roomDetails || '';
+        roomNotesTextarea.value = room.roomNotes || '';
+
+        roomTypeSelect.addEventListener('change', event => {
+          const selectedType = event.target.value;
+          const nameOptions = getRoomNameOptions(selectedType);
+          const defaultName = nameOptions[0] && nameOptions[0] !== 'Custom' ? nameOptions[0] : '';
+
+          room.roomType = selectedType;
+
+          if(!room.roomName || room.roomName === 'Custom' || !getRoomNameOptions(room.roomType).includes(room.roomName)){
+            room.roomName = defaultName || 'Custom';
+          }
+
+          populateRoomNameSelect(roomNameSelect, selectedType || 'Custom', room.roomName || '');
+          customRoomNameWrap.style.display = room.roomName === 'Custom' ? 'block' : 'none';
+          if(room.roomName !== 'Custom'){
+            customRoomNameInput.value = '';
+          }
+
+          maybeAutofillRoom(room.id);
+          saveState();
+          render();
+        });
+
+        roomNameSelect.addEventListener('change', event => {
+          const selectedName = event.target.value;
+          if(selectedName === 'Custom'){
+            room.roomName = 'Custom';
+            customRoomNameWrap.style.display = 'block';
+            customRoomNameInput.focus();
+          } else {
+            room.roomName = selectedName;
+            customRoomNameWrap.style.display = 'none';
+            customRoomNameInput.value = '';
+          }
+          saveState();
+          render();
+        });
+
+        customRoomNameInput.addEventListener('input', event => {
+          const value = event.target.value;
+          room.roomName = value;
+          saveState();
+          title.textContent = getDisplayRoomTitle(room, index);
+        });
+
+        cleaningTypeSelect.addEventListener('change', event => {
+          room.cleaningType = event.target.value;
+          maybeAutofillRoom(room.id);
+          saveState();
+          render();
+        });
+
+        estimatedTimeSelect.addEventListener('change', event => {
+          room.estimatedTime = event.target.value;
+          room.lastAutoTime = event.target.value;
+          saveState();
+          updateStats();
+        });
+
+        roomDetailsTextarea.addEventListener('input', event => {
+          room.roomDetails = event.target.value;
+          saveState();
+        });
+
+        roomNotesTextarea.addEventListener('input', event => {
+          room.roomNotes = event.target.value;
+          saveState();
+        });
+
+        removeBtn.addEventListener('click', () => removeRoom(room.id));
+
+        els.roomsContainer.appendChild(fragment);
       });
     }
 
-    function csvEscape(value){
-      return `"${String(value ?? '').replace(/"/g, '""')}"`;
-    }
+    updateStats();
+  }
 
-    function exportCsv(){
-      const rows = [[
-        'Client / Job Name',
-        'Address / Location',
-        'Hourly / Quote Rate ($)',
-        'General Notes',
-        'Client Name',
-        'Signature Date',
-        'Room Name',
-        'Cleaning Type',
-        'Estimated Time (minutes)',
-        'Room Details / Tasks'
-      ]];
+  function bindTopFields(){
+    els.jobName.addEventListener('input', event => {
+      state.jobName = event.target.value;
+      saveState();
+    });
 
-      if(state.rooms.length === 0){
+    els.jobAddress.addEventListener('input', event => {
+      state.jobAddress = event.target.value;
+      saveState();
+    });
+
+    els.jobHourlyRate.addEventListener('input', event => {
+      state.jobHourlyRate = event.target.value;
+      saveState();
+      updateStats();
+    });
+
+    els.jobNotes.addEventListener('input', event => {
+      state.jobNotes = event.target.value;
+      saveState();
+    });
+
+    els.clientName.addEventListener('input', event => {
+      state.clientName = event.target.value;
+      saveState();
+    });
+
+    els.signatureDate.addEventListener('input', event => {
+      state.signatureDate = event.target.value;
+      saveState();
+    });
+  }
+
+  function csvEscape(value){
+    return `"${String(value ?? '').replace(/"/g, '""')}"`;
+  }
+
+  function exportCsv(){
+    const rows = [[
+      'Client / Job Name',
+      'Address / Location',
+      'Hourly / Quote Rate ($)',
+      'General Notes',
+      'Client Name',
+      'Signature Date',
+      'Room Type',
+      'Room Name',
+      'Cleaning Type',
+      'Estimated Time (minutes)',
+      'Room Details / Tasks',
+      'Room Notes'
+    ]];
+
+    if(state.rooms.length === 0){
+      rows.push([
+        state.jobName,
+        state.jobAddress,
+        state.jobHourlyRate,
+        state.jobNotes,
+        state.clientName,
+        state.signatureDate,
+        '', '', '', '', '', ''
+      ]);
+    } else {
+      state.rooms.forEach(room => {
         rows.push([
           state.jobName,
           state.jobAddress,
@@ -800,424 +1387,435 @@ function loadState(){
           state.jobNotes,
           state.clientName,
           state.signatureDate,
-          '', '', '', ''
+          room.roomType,
+          room.roomName,
+          room.cleaningType,
+          room.estimatedTime,
+          room.roomDetails,
+          room.roomNotes
         ]);
-      } else {
-        state.rooms.forEach(room => {
-          rows.push([
-            state.jobName,
-            state.jobAddress,
-            state.jobHourlyRate,
-            state.jobNotes,
-            state.clientName,
-            state.signatureDate,
-            room.roomName,
-            room.cleaningType,
-            room.estimatedTime,
-            room.roomDetails
-          ]);
-        });
-      }
-
-      const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const downloadLink = document.createElement('a');
-      const fileBase = (state.jobName || 'spotless-co-quote').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
-      downloadLink.href = url;
-      downloadLink.download = `${fileBase || 'spotless-co-quote'}.csv`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      downloadLink.remove();
-      URL.revokeObjectURL(url);
+      });
     }
 
-    async function buildPdfBlob(){
-      updateStats();
-      const { jsPDF } = window.jspdf;
-      const pdfDoc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
+    const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    const fileBase = (state.jobName || 'spotless-co-quote').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
+    downloadLink.href = url;
+    downloadLink.download = `${fileBase || 'spotless-co-quote'}.csv`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+    URL.revokeObjectURL(url);
+  }
 
-      const pageWidth = pdfDoc.internal.pageSize.getWidth();
-      const pageHeight = pdfDoc.internal.pageSize.getHeight();
-      const margin = 40;
-      const contentWidth = pageWidth - (margin * 2);
-      let y = margin;
+  async function buildPdfBlob(){
+    updateStats();
+    const { jsPDF } = window.jspdf;
+    const pdfDoc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
-      const totalMinutes = state.rooms.reduce((sum, room) => {
-        const value = parseFloat(room.estimatedTime);
-        return sum + (Number.isFinite(value) ? value : 0);
-      }, 0);
-      const hourlyRate = parseFloat(state.jobHourlyRate);
-      const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
-      const estimatedPrice = (totalMinutes / 60) * safeRate;
-      const todayText = state.signatureDate || new Date().toISOString().split('T')[0];
+    const pageWidth = pdfDoc.internal.pageSize.getWidth();
+    const pageHeight = pdfDoc.internal.pageSize.getHeight();
+    const margin = 40;
+    const contentWidth = pageWidth - (margin * 2);
+    let y = margin;
 
-      function currency(value){
-        return formatCurrency(value);
-      }
+    const totalMinutes = state.rooms.reduce((sum, room) => {
+      const value = parseFloat(room.estimatedTime);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
 
-      function addNewPage(){
-        pdfDoc.addPage();
-        y = margin;
-      }
+    const hourlyRate = parseFloat(state.jobHourlyRate);
+    const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
+    const estimatedPrice = (totalMinutes / 60) * safeRate;
+    const todayText = state.signatureDate || new Date().toISOString().split('T')[0];
 
-      function ensureSpace(heightNeeded){
-        if (y + heightNeeded > pageHeight - margin) addNewPage();
-      }
+    function currency(value){
+      return formatCurrency(value);
+    }
 
-      function textBlock(text, x, yPos, maxWidth, options = {}){
-        const lines = pdfDoc.splitTextToSize(String(text || ''), maxWidth);
-        pdfDoc.text(lines, x, yPos, options);
-        return lines.length * 14;
-      }
+    function addNewPage(){
+      pdfDoc.addPage();
+      y = margin;
+    }
 
-      pdfDoc.setFillColor(49, 68, 58);
-      pdfDoc.roundedRect(margin, y, contentWidth, 78, 16, 16, 'F');
-      pdfDoc.setTextColor(255, 255, 255);
+    function ensureSpace(heightNeeded){
+      if (y + heightNeeded > pageHeight - margin) addNewPage();
+    }
+
+    function textBlock(text, x, yPos, maxWidth){
+      const lines = pdfDoc.splitTextToSize(String(text || ''), maxWidth);
+      pdfDoc.text(lines, x, yPos);
+      return lines.length * 14;
+    }
+
+    pdfDoc.setFillColor(49, 68, 58);
+    pdfDoc.roundedRect(margin, y, contentWidth, 78, 16, 16, 'F');
+    pdfDoc.setTextColor(255, 255, 255);
+    pdfDoc.setFont('helvetica', 'bold');
+    pdfDoc.setFontSize(22);
+    pdfDoc.text('Spotless & Co', margin + 18, y + 28);
+    pdfDoc.setFontSize(16);
+    pdfDoc.text('Cleaning Quote', margin + 18, y + 50);
+    pdfDoc.setFont('helvetica', 'normal');
+    pdfDoc.setFontSize(10);
+    pdfDoc.text(`Quote Date: ${todayText}`, pageWidth - margin - 110, y + 28);
+    pdfDoc.text(`Client: ${state.jobName || 'Not provided'}`, pageWidth - margin - 110, y + 44);
+    pdfDoc.text(`Address: ${state.jobAddress || 'Not provided'}`, pageWidth - margin - 110, y + 60);
+    y += 98;
+
+    pdfDoc.setTextColor(47, 42, 38);
+    pdfDoc.setFont('helvetica', 'bold');
+    pdfDoc.setFontSize(14);
+    pdfDoc.text('Quote Summary', margin, y);
+    y += 14;
+
+    const boxGap = 10;
+    const boxWidth = (contentWidth - boxGap) / 2;
+    const leftX = margin;
+    const rightX = margin + boxWidth + boxGap;
+
+    pdfDoc.setDrawColor(220, 207, 190);
+    pdfDoc.setFillColor(252, 250, 247);
+    pdfDoc.roundedRect(leftX, y, boxWidth, 92, 12, 12, 'FD');
+    pdfDoc.roundedRect(rightX, y, boxWidth, 92, 12, 12, 'FD');
+
+    pdfDoc.setFontSize(10);
+    pdfDoc.setTextColor(119, 107, 97);
+    pdfDoc.text('Client Information', leftX + 14, y + 18);
+    pdfDoc.text('Pricing Breakdown', rightX + 14, y + 18);
+
+    pdfDoc.setTextColor(47, 42, 38);
+    pdfDoc.setFont('helvetica', 'normal');
+    pdfDoc.text(`Client Name: ${state.clientName || state.jobName || 'Not provided'}`, leftX + 14, y + 38);
+    pdfDoc.text(`Property: ${state.jobAddress || 'Not provided'}`, leftX + 14, y + 54);
+    pdfDoc.text(`Rooms Included: ${state.rooms.length}`, leftX + 14, y + 70);
+
+    pdfDoc.text(`Rate: ${currency(safeRate)} / hour`, rightX + 14, y + 38);
+    pdfDoc.text(`Estimated Time: ${totalMinutes} min`, rightX + 14, y + 54);
+    pdfDoc.setFont('helvetica', 'bold');
+    pdfDoc.text(`Estimated Total: ${currency(estimatedPrice)}`, rightX + 14, y + 74);
+    y += 112;
+
+    if (state.jobNotes && state.jobNotes.trim()) {
+      ensureSpace(70);
       pdfDoc.setFont('helvetica', 'bold');
-      pdfDoc.setFontSize(22);
-      pdfDoc.text('Spotless & Co', margin + 18, y + 28);
-      pdfDoc.setFontSize(16);
-      pdfDoc.text('Cleaning Quote', margin + 18, y + 50);
+      pdfDoc.setFontSize(12);
+      pdfDoc.text('Notes', margin, y);
+      y += 10;
       pdfDoc.setFont('helvetica', 'normal');
       pdfDoc.setFontSize(10);
-      pdfDoc.text(`Quote Date: ${todayText}`, pageWidth - margin - 110, y + 28);
-      pdfDoc.text(`Client: ${state.jobName || 'Not provided'}`, pageWidth - margin - 110, y + 44);
-      pdfDoc.text(`Address: ${state.jobAddress || 'Not provided'}`, pageWidth - margin - 110, y + 60);
-      y += 98;
+      const noteHeight = textBlock(state.jobNotes, margin, y + 14, contentWidth);
+      y += noteHeight + 14;
+    }
 
-      pdfDoc.setTextColor(47, 42, 38);
-      pdfDoc.setFont('helvetica', 'bold');
-      pdfDoc.setFontSize(14);
-      pdfDoc.text('Quote Summary', margin, y);
-      y += 14;
+    ensureSpace(40);
+    pdfDoc.setFont('helvetica', 'bold');
+    pdfDoc.setFontSize(14);
+    pdfDoc.text('Room Breakdown', margin, y);
+    y += 16;
 
-      const boxGap = 10;
-      const boxWidth = (contentWidth - boxGap) / 2;
-      const leftX = margin;
-      const rightX = margin + boxWidth + boxGap;
+    const rooms = state.rooms.length ? state.rooms : [newRoom()];
+    for (let i = 0; i < rooms.length; i++) {
+      const room = rooms[i];
+      const roomName = room.roomName || `Room ${i + 1}`;
+      const roomType = room.roomType || 'Not specified';
+      const cleaningType = room.cleaningType || 'Not specified';
+      const minutes = parseFloat(room.estimatedTime);
+      const safeMinutes = Number.isFinite(minutes) ? minutes : 0;
+      const roomPrice = (safeMinutes / 60) * safeRate;
+      const details = room.roomDetails || 'No task details provided.';
+      const notes = room.roomNotes || '';
+
+      const detailLines = pdfDoc.splitTextToSize(details, contentWidth - 28);
+      const noteLines = notes ? pdfDoc.splitTextToSize(`Notes: ${notes}`, contentWidth - 28) : [];
+      const detailHeight = Math.max(18, detailLines.length * 12);
+      const noteHeight = noteLines.length ? Math.max(18, noteLines.length * 12) : 0;
+      const cardHeight = 88 + detailHeight + noteHeight;
+
+      ensureSpace(cardHeight + 12);
 
       pdfDoc.setDrawColor(220, 207, 190);
-      pdfDoc.setFillColor(252, 250, 247);
-      pdfDoc.roundedRect(leftX, y, boxWidth, 92, 12, 12, 'FD');
-      pdfDoc.roundedRect(rightX, y, boxWidth, 92, 12, 12, 'FD');
-
-      pdfDoc.setFontSize(10);
-      pdfDoc.setTextColor(119, 107, 97);
-      pdfDoc.text('Client Information', leftX + 14, y + 18);
-      pdfDoc.text('Pricing Breakdown', rightX + 14, y + 18);
-
-      pdfDoc.setTextColor(47, 42, 38);
-      pdfDoc.setFont('helvetica', 'normal');
-      pdfDoc.text(`Client Name: ${state.clientName || state.jobName || 'Not provided'}`, leftX + 14, y + 38);
-      pdfDoc.text(`Property: ${state.jobAddress || 'Not provided'}`, leftX + 14, y + 54);
-      pdfDoc.text(`Rooms Included: ${state.rooms.length}`, leftX + 14, y + 70);
-
-      pdfDoc.text(`Rate: ${currency(safeRate)} / hour`, rightX + 14, y + 38);
-      pdfDoc.text(`Estimated Time: ${totalMinutes} min`, rightX + 14, y + 54);
-      pdfDoc.setFont('helvetica', 'bold');
-      pdfDoc.text(`Estimated Total: ${currency(estimatedPrice)}`, rightX + 14, y + 74);
-      y += 112;
-
-      if (state.jobNotes && state.jobNotes.trim()) {
-        ensureSpace(70);
-        pdfDoc.setFont('helvetica', 'bold');
-        pdfDoc.setFontSize(12);
-        pdfDoc.text('Notes', margin, y);
-        y += 10;
-        pdfDoc.setFont('helvetica', 'normal');
-        pdfDoc.setFontSize(10);
-        const noteHeight = textBlock(state.jobNotes, margin, y + 14, contentWidth);
-        y += noteHeight + 14;
-      }
-
-      ensureSpace(40);
-      pdfDoc.setFont('helvetica', 'bold');
-      pdfDoc.setFontSize(14);
-      pdfDoc.text('Room Breakdown', margin, y);
-      y += 16;
-
-      const rooms = state.rooms.length ? state.rooms : [newRoom()];
-      for (let i = 0; i < rooms.length; i++) {
-        const room = rooms[i];
-        const roomName = room.roomName || `Room ${i + 1}`;
-        const cleaningType = room.cleaningType || 'Not specified';
-        const minutes = parseFloat(room.estimatedTime);
-        const safeMinutes = Number.isFinite(minutes) ? minutes : 0;
-        const roomPrice = (safeMinutes / 60) * safeRate;
-        const details = room.roomDetails || 'No task details provided.';
-
-        const detailLines = pdfDoc.splitTextToSize(details, contentWidth - 28);
-        const detailHeight = Math.max(18, detailLines.length * 12);
-        const cardHeight = 76 + detailHeight;
-        ensureSpace(cardHeight + 12);
-
-        pdfDoc.setDrawColor(220, 207, 190);
-        pdfDoc.setFillColor(255, 252, 248);
-        pdfDoc.roundedRect(margin, y, contentWidth, cardHeight, 12, 12, 'FD');
-
-        pdfDoc.setFont('helvetica', 'bold');
-        pdfDoc.setFontSize(12);
-        pdfDoc.setTextColor(47, 42, 38);
-        pdfDoc.text(roomName, margin + 14, y + 20);
-
-        pdfDoc.setFont('helvetica', 'normal');
-        pdfDoc.setFontSize(10);
-        pdfDoc.text(`Cleaning Type: ${cleaningType}`, margin + 14, y + 38);
-        pdfDoc.text(`Estimated Time: ${safeMinutes} min`, margin + 14, y + 54);
-        pdfDoc.text(`Estimated Cost: ${currency(roomPrice)}`, pageWidth - margin - 130, y + 38);
-
-        pdfDoc.setFont('helvetica', 'bold');
-        pdfDoc.text('Tasks / Details', margin + 14, y + 72);
-        pdfDoc.setFont('helvetica', 'normal');
-        pdfDoc.text(detailLines, margin + 14, y + 88);
-
-        y += cardHeight + 12;
-      }
-
-      ensureSpace(110);
-      y += 8;
-      pdfDoc.setDrawColor(220, 207, 190);
-      pdfDoc.line(margin, y, pageWidth - margin, y);
-      y += 18;
-
-      pdfDoc.setFont('helvetica', 'bold');
-      pdfDoc.setFontSize(13);
-      pdfDoc.text('Approval & Signature', margin, y);
-      y += 16;
-
-      pdfDoc.setFont('helvetica', 'normal');
-      pdfDoc.setFontSize(10);
-      pdfDoc.text(`Client Name: ${state.clientName || state.jobName || 'Not provided'}`, margin, y);
-      pdfDoc.text(`Date: ${todayText}`, pageWidth - margin - 90, y);
-      y += 18;
-
-      pdfDoc.setDrawColor(190, 180, 170);
-      pdfDoc.roundedRect(margin, y, contentWidth, 86, 10, 10, 'D');
-
-      if (state.signatureDataUrl) {
-        try {
-          pdfDoc.addImage(state.signatureDataUrl, 'PNG', margin + 10, y + 10, 180, 50, undefined, 'FAST');
-        } catch (e) {
-          pdfDoc.setFontSize(10);
-          pdfDoc.text('Signature image could not be embedded.', margin + 12, y + 28);
-        }
-      } else {
-        pdfDoc.setFontSize(10);
-        pdfDoc.setTextColor(119, 107, 97);
-        pdfDoc.text('No signature captured.', margin + 12, y + 28);
-        pdfDoc.setTextColor(47, 42, 38);
-      }
-
-      pdfDoc.setDrawColor(160, 150, 140);
-      pdfDoc.line(margin + 12, y + 66, margin + 220, y + 66);
-      pdfDoc.setFontSize(9);
-      pdfDoc.text('Client Signature', margin + 12, y + 79);
+      pdfDoc.setFillColor(255, 252, 248);
+      pdfDoc.roundedRect(margin, y, contentWidth, cardHeight, 12, 12, 'FD');
 
       pdfDoc.setFont('helvetica', 'bold');
       pdfDoc.setFontSize(12);
-      pdfDoc.text(`Total Estimated Quote: ${currency(estimatedPrice)}`, pageWidth - margin - 190, y + 76);
+      pdfDoc.setTextColor(47, 42, 38);
+      pdfDoc.text(roomName, margin + 14, y + 20);
 
-      return pdfDoc.output('blob');
+      pdfDoc.setFont('helvetica', 'normal');
+      pdfDoc.setFontSize(10);
+      pdfDoc.text(`Room Type: ${roomType}`, margin + 14, y + 38);
+      pdfDoc.text(`Cleaning Type: ${cleaningType}`, margin + 14, y + 52);
+      pdfDoc.text(`Estimated Time: ${safeMinutes} min`, margin + 14, y + 66);
+      pdfDoc.text(`Estimated Cost: ${currency(roomPrice)}`, pageWidth - margin - 130, y + 38);
+
+      pdfDoc.setFont('helvetica', 'bold');
+      pdfDoc.text('Tasks / Details', margin + 14, y + 84);
+      pdfDoc.setFont('helvetica', 'normal');
+      pdfDoc.text(detailLines, margin + 14, y + 100);
+
+      if(noteLines.length){
+        const notesY = y + 100 + detailHeight + 6;
+        pdfDoc.setFont('helvetica', 'bold');
+        pdfDoc.text('Room Notes', margin + 14, notesY);
+        pdfDoc.setFont('helvetica', 'normal');
+        pdfDoc.text(noteLines, margin + 14, notesY + 14);
+      }
+
+      y += cardHeight + 12;
     }
 
-    async function generatePdf(){
-      try{
-        const blob = await buildPdfBlob();
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        const fileBase = (state.jobName || 'spotless-co-quote').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
-        anchor.href = url;
-        anchor.download = `${fileBase || 'spotless-co-quote'}.pdf`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1500);
-      }catch(error){
-        console.error('PDF generation failed:', error);
-        alert('Unable to generate the PDF on this device/browser.');
+    ensureSpace(110);
+    y += 8;
+    pdfDoc.setDrawColor(220, 207, 190);
+    pdfDoc.line(margin, y, pageWidth - margin, y);
+    y += 18;
+
+    pdfDoc.setFont('helvetica', 'bold');
+    pdfDoc.setFontSize(13);
+    pdfDoc.text('Approval & Signature', margin, y);
+    y += 16;
+
+    pdfDoc.setFont('helvetica', 'normal');
+    pdfDoc.setFontSize(10);
+    pdfDoc.text(`Client Name: ${state.clientName || state.jobName || 'Not provided'}`, margin, y);
+    pdfDoc.text(`Date: ${todayText}`, pageWidth - margin - 90, y);
+    y += 18;
+
+    pdfDoc.setDrawColor(190, 180, 170);
+    pdfDoc.roundedRect(margin, y, contentWidth, 86, 10, 10, 'D');
+
+    if (state.signatureDataUrl) {
+      try {
+        pdfDoc.addImage(state.signatureDataUrl, 'PNG', margin + 10, y + 10, 180, 50, undefined, 'FAST');
+      } catch (e) {
+        pdfDoc.setFontSize(10);
+        pdfDoc.text('Signature image could not be embedded.', margin + 12, y + 28);
+      }
+    } else {
+      pdfDoc.setFontSize(10);
+      pdfDoc.setTextColor(119, 107, 97);
+      pdfDoc.text('No signature captured.', margin + 12, y + 28);
+      pdfDoc.setTextColor(47, 42, 38);
+    }
+
+    pdfDoc.setDrawColor(160, 150, 140);
+    pdfDoc.line(margin + 12, y + 66, margin + 220, y + 66);
+    pdfDoc.setFontSize(9);
+    pdfDoc.text('Client Signature', margin + 12, y + 79);
+
+    pdfDoc.setFont('helvetica', 'bold');
+    pdfDoc.setFontSize(12);
+    pdfDoc.text(`Total Estimated Quote: ${currency(estimatedPrice)}`, pageWidth - margin - 190, y + 76);
+
+    return pdfDoc.output('blob');
+  }
+
+  async function generatePdf(){
+    try{
+      const blob = await buildPdfBlob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      const fileBase = (state.jobName || 'spotless-co-quote').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
+      anchor.href = url;
+      anchor.download = `${fileBase || 'spotless-co-quote'}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }catch(error){
+      console.error('PDF generation failed:', error);
+      alert('Unable to generate the PDF on this device/browser.');
+    }
+  }
+
+  async function sharePdf(){
+    try{
+      const blob = await buildPdfBlob();
+      const fileBase = (state.jobName || 'spotless-co-quote').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
+      const file = new File([blob], `${fileBase || 'spotless-co-quote'}.pdf`, { type: 'application/pdf' });
+      const shareData = {
+        title: state.jobName || 'Spotless & Co Quote',
+        text: `Spotless & Co cleaning quote for ${state.jobName || 'your property'}`,
+        files: [file]
+      };
+
+      if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share(shareData);
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      alert('File sharing is not supported here, so the PDF was opened in a new tab instead.');
+    }catch(error){
+      if(error && error.name === 'AbortError') return;
+      console.error('Share failed:', error);
+      alert('Unable to share the PDF on this device/browser.');
+    }
+  }
+
+  async function copySummary(){
+    const totalMinutes = state.rooms.reduce((sum, room) => {
+      const value = parseFloat(room.estimatedTime);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+
+    const rate = parseFloat(state.jobHourlyRate);
+    const safeRate = Number.isFinite(rate) ? rate : 0;
+    const price = (totalMinutes / 60) * safeRate;
+
+    const roomLines = state.rooms.map((room, index) => {
+      return `${index + 1}. ${room.roomName || `Room ${index + 1}`} — ${room.cleaningType || 'Cleaning type not set'} — ${room.estimatedTime || 0} min`;
+    }).join('\n');
+
+    const summary = [
+      'Spotless & Co Cleaning Quote',
+      `Client: ${state.jobName || ''}`,
+      `Address: ${state.jobAddress || ''}`,
+      `Rate: ${formatCurrency(safeRate)}`,
+      `Total Rooms: ${state.rooms.length}`,
+      `Estimated Time: ${totalMinutes} min`,
+      `Estimated Price: ${formatCurrency(price)}`,
+      '',
+      roomLines
+    ].join('\n');
+
+    try{
+      await navigator.clipboard.writeText(summary);
+      alert('Quote summary copied to clipboard.');
+    }catch(error){
+      console.error('Copy failed:', error);
+      alert('Unable to copy summary on this device/browser.');
+    }
+  }
+
+  function initSignaturePad(){
+    const canvas = els.signaturePad;
+    const context = canvas.getContext('2d');
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function drawBackground(width, height){
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, width, height);
+    }
+
+    function resizeCanvas(){
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const existing = state.signatureDataUrl;
+
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.scale(ratio, ratio);
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      context.strokeStyle = '#2f2a26';
+      context.lineWidth = 2.2;
+      drawBackground(rect.width, rect.height);
+
+      if(existing){
+        const image = new Image();
+        image.onload = () => context.drawImage(image, 0, 0, rect.width, rect.height);
+        image.src = existing;
       }
     }
 
-    async function sharePdf(){
-      try{
-        const blob = await buildPdfBlob();
-        const fileBase = (state.jobName || 'spotless-co-quote').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
-        const file = new File([blob], `${fileBase || 'spotless-co-quote'}.pdf`, { type: 'application/pdf' });
-        const shareData = {
-          title: state.jobName || 'Spotless & Co Quote',
-          text: `Spotless & Co cleaning quote for ${state.jobName || 'your property'}`,
-          files: [file]
-        };
-
-        if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
-          await navigator.share(shareData);
-          return;
-        }
-
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
-        alert('File sharing is not supported here, so the PDF was opened in a new tab instead.');
-      }catch(error){
-        if(error && error.name === 'AbortError') return;
-        console.error('Share failed:', error);
-        alert('Unable to share the PDF on this device/browser.');
-      }
+    function positionFromEvent(event){
+      const rect = canvas.getBoundingClientRect();
+      const point = event.touches ? event.touches[0] : event;
+      return {
+        x: point.clientX - rect.left,
+        y: point.clientY - rect.top
+      };
     }
 
-    async function copySummary(){
-      const totalMinutes = state.rooms.reduce((sum, room) => {
-        const value = parseFloat(room.estimatedTime);
-        return sum + (Number.isFinite(value) ? value : 0);
-      }, 0);
-      const rate = parseFloat(state.jobHourlyRate);
-      const safeRate = Number.isFinite(rate) ? rate : 0;
-      const price = (totalMinutes / 60) * safeRate;
-      const roomLines = state.rooms.map((room, index) => `${index + 1}. ${room.roomName || `Room ${index + 1}`} — ${room.cleaningType || 'Cleaning type not set'} — ${room.estimatedTime || 0} min`).join('\n');
-      const summary = [
-        'Spotless & Co Cleaning Quote',
-        `Client: ${state.jobName || ''}`,
-        `Address: ${state.jobAddress || ''}`,
-        `Rate: ${formatCurrency(safeRate)}`,
-        `Total Rooms: ${state.rooms.length}`,
-        `Estimated Time: ${totalMinutes} min`,
-        `Estimated Price: ${formatCurrency(price)}`,
-        '',
-        roomLines
-      ].join('\n');
-
-      try{
-        await navigator.clipboard.writeText(summary);
-        alert('Quote summary copied to clipboard.');
-      }catch(error){
-        console.error('Copy failed:', error);
-        alert('Unable to copy summary on this device/browser.');
-      }
+    function start(event){
+      drawing = true;
+      const pos = positionFromEvent(event);
+      lastX = pos.x;
+      lastY = pos.y;
     }
 
-    function initSignaturePad(){
-      const canvas = els.signaturePad;
-      const context = canvas.getContext('2d');
-      let drawing = false;
-      let lastX = 0;
-      let lastY = 0;
+    function move(event){
+      if(!drawing) return;
+      event.preventDefault();
+      const pos = positionFromEvent(event);
+      context.beginPath();
+      context.moveTo(lastX, lastY);
+      context.lineTo(pos.x, pos.y);
+      context.stroke();
+      lastX = pos.x;
+      lastY = pos.y;
+    }
 
-      function drawBackground(width, height){
-        context.fillStyle = '#ffffff';
-        context.fillRect(0, 0, width, height);
-      }
+    function end(){
+      if(!drawing) return;
+      drawing = false;
+      state.signatureDataUrl = canvas.toDataURL('image/png');
+      saveState();
+    }
 
-      function resizeCanvas(){
-        const rect = canvas.getBoundingClientRect();
-        const ratio = window.devicePixelRatio || 1;
-        const existing = state.signatureDataUrl;
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+    window.addEventListener('resize', resizeCanvas);
 
-        canvas.width = rect.width * ratio;
-        canvas.height = rect.height * ratio;
-
-        context.setTransform(1, 0, 0, 1, 0, 0);
-        context.scale(ratio, ratio);
-        context.lineCap = 'round';
-        context.lineJoin = 'round';
-        context.strokeStyle = '#2f2a26';
-        context.lineWidth = 2.2;
-        drawBackground(rect.width, rect.height);
-
-        if(existing){
-          const image = new Image();
-          image.onload = () => context.drawImage(image, 0, 0, rect.width, rect.height);
-          image.src = existing;
-        }
-      }
-
-      function positionFromEvent(event){
-        const rect = canvas.getBoundingClientRect();
-        const point = event.touches ? event.touches[0] : event;
-        return {
-          x: point.clientX - rect.left,
-          y: point.clientY - rect.top
-        };
-      }
-
-      function start(event){
-        drawing = true;
-        const pos = positionFromEvent(event);
-        lastX = pos.x;
-        lastY = pos.y;
-      }
-
-      function move(event){
-        if(!drawing) return;
-        event.preventDefault();
-        const pos = positionFromEvent(event);
-        context.beginPath();
-        context.moveTo(lastX, lastY);
-        context.lineTo(pos.x, pos.y);
-        context.stroke();
-        lastX = pos.x;
-        lastY = pos.y;
-      }
-
-      function end(){
-        if(!drawing) return;
-        drawing = false;
-        state.signatureDataUrl = canvas.toDataURL('image/png');
-        saveState();
-      }
-
-      canvas.addEventListener('mousedown', start);
-      canvas.addEventListener('mousemove', move);
-      window.addEventListener('mouseup', end);
-      canvas.addEventListener('touchstart', start, { passive: false });
-      canvas.addEventListener('touchmove', move, { passive: false });
-      canvas.addEventListener('touchend', end);
-      window.addEventListener('resize', resizeCanvas);
-
-      els.clearSignatureBtn.addEventListener('click', () => {
-        state.signatureDataUrl = '';
-        saveState();
-        resizeCanvas();
-      });
-
-      els.saveSignatureBtn.addEventListener('click', () => {
-        state.signatureDataUrl = canvas.toDataURL('image/png');
-        saveState();
-        alert('Signature saved.');
-      });
-
+    els.clearSignatureBtn.addEventListener('click', () => {
+      state.signatureDataUrl = '';
+      saveState();
       resizeCanvas();
-    }
+    });
 
-    function clearAll(){
-      const confirmed = window.confirm('Clear all saved quote and room details from this device?');
-      if(!confirmed) return;
-      state = defaultState();
+    els.saveSignatureBtn.addEventListener('click', () => {
+      state.signatureDataUrl = canvas.toDataURL('image/png');
       saveState();
-      render();
-      if(els.signaturePad){
-        const ctx = els.signaturePad.getContext('2d');
-        ctx.clearRect(0, 0, els.signaturePad.width, els.signaturePad.height);
-      }
-      initSignaturePad();
-    }
+      alert('Signature saved.');
+    });
 
-    els.addRoomBtn.addEventListener('click', () => addRoom());
-    els.clearAllBtn.addEventListener('click', clearAll);
-    els.exportCsvBtn.addEventListener('click', exportCsv);
-    els.pdfBtn.addEventListener('click', generatePdf);
-    els.shareBtn.addEventListener('click', sharePdf);
-    els.copySummaryBtn.addEventListener('click', copySummary);
+    resizeCanvas();
+  }
 
-    bindTopFields();
-
-    if(state.rooms.length === 0){
-      state.rooms.push(newRoom());
-      saveState();
-    }
-
+  function clearAll(){
+    const confirmed = window.confirm('Clear all saved quote and room details from this device?');
+    if(!confirmed) return;
+    state = defaultState();
+    saveState();
     render();
+    if(els.signaturePad){
+      const ctx = els.signaturePad.getContext('2d');
+      ctx.clearRect(0, 0, els.signaturePad.width, els.signaturePad.height);
+    }
     initSignaturePad();
-  </script>
+  }
+
+  els.addRoomBtn.addEventListener('click', () => addRoom());
+  els.clearAllBtn.addEventListener('click', clearAll);
+  els.exportCsvBtn.addEventListener('click', exportCsv);
+  els.pdfBtn.addEventListener('click', generatePdf);
+  els.shareBtn.addEventListener('click', sharePdf);
+  els.copySummaryBtn.addEventListener('click', copySummary);
+
+  bindTopFields();
+
+  if(state.rooms.length === 0){
+    state.rooms.push(newRoom());
+    saveState();
+  }
+
+  render();
+  initSignaturePad();
+</script>
 </body>
 </html>
