@@ -557,18 +557,12 @@
     </div>
   </article>
 </template>
-	<section class="card">
-  <h2 class="card-title">Room Breakdown</h2>
-  <div id="roomsContainer" class="rooms"></div>
-
-  <div class="quick-actions screen-only" style="margin-top:14px;">
-    <button class="btn btn-primary" id="addRoomBtn" type="button">+ Add Room</button>
-    <button class="btn btn-soft" id="clearAllBtn" type="button">Clear All</button>
-    <a href="index.html" class="btn btn-soft" style="text-decoration:none;display:grid;place-items:center;">Return Home</a>
-  </div>
-
-  <p class="footer-note">On supported mobile browsers, “Share PDF” uses the native device share sheet. Otherwise it falls back to opening the PDF in a new tab.</p>
-</section>
+	
+	<div class="quick-actions screen-only" style="margin-top:14px;">
+  <button class="btn btn-primary js-add-room" type="button">+ Add Room</button>
+  <button class="btn btn-soft js-clear-all" type="button">Clear All</button>
+  <a href="index.html" class="btn btn-soft" style="text-decoration:none;display:grid;place-items:center;">Return Home</a>
+</div>
 
 <script>
   const STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v4';
@@ -1828,6 +1822,14 @@
 
   render();
   initSignaturePad();
+	
+	document.querySelectorAll('.js-add-room').forEach(btn => {
+  btn.addEventListener('click', () => addRoom());
+});
+
+document.querySelectorAll('.js-clear-all').forEach(btn => {
+  btn.addEventListener('click', clearAll);
+});
 </script>
 </body>
 </html>
