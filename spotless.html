@@ -559,8 +559,8 @@
 </template>
 	
 	<div class="quick-actions screen-only" style="margin-top:14px;">
-  <button class="btn btn-primary js-add-room" type="button">+ Add Room</button>
-  <button class="btn btn-soft js-clear-all" type="button">Clear All</button>
+  <button class="btn btn-primary" id="addRoomBtn1">+ Add Room</button>
+  <button class="btn btn-soft" id="clearAllBtn1">Clear All</button>
   <a href="index.html" class="btn btn-soft" style="text-decoration:none;display:grid;place-items:center;">Return Home</a>
 </div>
 
@@ -1812,6 +1812,10 @@
   els.pdfBtn.addEventListener('click', generatePdf);
   els.shareBtn.addEventListener('click', sharePdf);
   els.copySummaryBtn.addEventListener('click', copySummary);
+  els.addRoomBtn1.addEventListener('click', () => addRoom());
+  els.clearAllBtn1.addEventListener('click', clearAll);
+	
+
 
   bindTopFields();
 
@@ -1823,13 +1827,7 @@
   render();
   initSignaturePad();
 	
-	document.querySelectorAll('.js-add-room').forEach(btn => {
-  btn.addEventListener('click', () => addRoom());
-});
 
-document.querySelectorAll('.js-clear-all').forEach(btn => {
-  btn.addEventListener('click', clearAll);
-});
 </script>
 </body>
 </html>
