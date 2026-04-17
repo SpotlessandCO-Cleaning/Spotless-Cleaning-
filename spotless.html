@@ -490,6 +490,15 @@
       <div class="room-grid">
         <div class="field">
           <label>Room Name</label>
+			<select class="cleaning-type">
+            <option value="">Select Room Type</option>
+            <option value="Standard Clean">Kitchen/Dinning Room</option>
+            <option value="Deep Clean">Bathroom</option>
+            <option value="Move In / Move Out">Living Room</option>
+            <option value="Post Construction">Bedroom</option>
+            <option value="Disinfection">Comerical Space</option>
+            <option value="Custom">Custom</option>
+          </select>
           <input type="text" class="room-name" placeholder="Example: Master Bathroom" />
         </div>
 
@@ -508,7 +517,15 @@
 
         <div class="field">
           <label>Estimated Time (minutes)</label>
-          <input type="number" min="0" step="1" class="estimated-time" placeholder="Example: 60" />
+           <select class="cleaning-type">
+            <option value="">Select Estimated Time</option>
+            <option value="Standard Clean">30</option>
+            <option value="Deep Clean">60</option>
+            <option value="Move In / Move Out">90</option>
+            <option value="Post Construction">120</option>
+            <option value="Disinfection">150</option>
+            <option value="Custom">180</option>
+          </select>
         </div>
 
         <div class="field">
