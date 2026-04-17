@@ -387,67 +387,13 @@
       </div>
 
 		  <div class="quick-actions screen-only" style="margin-top:14px;">
-  <button class="btn btn-primary" id="addRoomBtn">+ Add Room</button>
   <button class="btn btn-soft" id="clearAllBtn">Clear All</button>
   <a href="index.html" class="btn btn-soft" style="text-decoration:none;display:grid;place-items:center;">Return Home</a>
 </div>
       </div>
     </section>
 
-    <section class="card screen-only">
-      <h2 class="card-title">Export &amp; Totals</h2>
-      <div class="toolbar">
-        <button class="btn btn-accent" id="exportCsvBtn">Export Quote</button>
-        <button class="btn btn-primary" id="pdfBtn">Generate Quote</button>
-      </div>
-      <div class="toolbar" style="margin-top:10px;">
-        <button class="btn btn-soft" id="shareBtn">Share Quote</button>
-        <button class="btn btn-soft" id="copySummaryBtn">Copy Summary</button>
-      </div>
-
-      <div class="summary">
-        <div class="pill">
-          <div class="pill-label">Total Rooms</div>
-          <div class="pill-value" id="totalRooms">0</div>
-        </div>
-        <div class="pill">
-          <div class="pill-label">Estimated Total Time</div>
-          <div class="pill-value" id="totalTime">0 min</div>
-        </div>
-        <div class="pill">
-          <div class="pill-label">Hourly / Quote Rate</div>
-          <div class="pill-value" id="displayRate">$0.00</div>
-        </div>
-        <div class="pill">
-          <div class="pill-label">Estimated Total Price</div>
-          <div class="pill-value" id="estimatedPrice">$0.00</div>
-        </div>
-      </div>
-
-      <div class="quote-strip">This layout is designed for quick quoting on mobile and clean handoff into PDF or spreadsheet format.</div>
-    </section>
-
-    <section class="card print-only">
-      <h2 class="card-title">Quote Summary</h2>
-      <div class="summary">
-        <div class="pill">
-          <div class="pill-label">Total Rooms</div>
-          <div class="pill-value" id="printTotalRooms">0</div>
-        </div>
-        <div class="pill">
-          <div class="pill-label">Estimated Total Time</div>
-          <div class="pill-value" id="printTotalTime">0 min</div>
-        </div>
-        <div class="pill">
-          <div class="pill-label">Hourly / Quote Rate</div>
-          <div class="pill-value" id="printDisplayRate">$0.00</div>
-        </div>
-        <div class="pill">
-          <div class="pill-label">Estimated Total Price</div>
-          <div class="pill-value" id="printEstimatedPrice">$0.00</div>
-        </div>
-      </div>
-    </section>
+    
 
     <section class="card">
       <h2 class="card-title">Client Signature</h2>
@@ -563,6 +509,60 @@
   <button class="btn btn-soft" id="clearAllBtn1">Clear All</button>
   <a href="index.html" class="btn btn-soft" style="text-decoration:none;display:grid;place-items:center;">Return Home</a>
 </div>
+<section class="card screen-only">
+      <h2 class="card-title">Export &amp; Totals</h2>
+      <div class="toolbar">
+        <button class="btn btn-accent" id="exportCsvBtn">Export Quote</button>
+        <button class="btn btn-primary" id="pdfBtn">Generate Quote</button>
+      </div>
+      <div class="toolbar" style="margin-top:10px;">
+        <button class="btn btn-soft" id="shareBtn">Share Quote</button>
+        <button class="btn btn-soft" id="copySummaryBtn">Copy Summary</button>
+      </div>
+
+      <div class="summary">
+        <div class="pill">
+          <div class="pill-label">Total Rooms</div>
+          <div class="pill-value" id="totalRooms">0</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Estimated Total Time</div>
+          <div class="pill-value" id="totalTime">0 min</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Hourly / Quote Rate</div>
+          <div class="pill-value" id="displayRate">$0.00</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Estimated Total Price</div>
+          <div class="pill-value" id="estimatedPrice">$0.00</div>
+        </div>
+      </div>
+
+      <div class="quote-strip">This layout is designed for quick quoting on mobile and clean handoff into PDF or spreadsheet format.</div>
+    </section>
+
+    <section class="card print-only">
+      <h2 class="card-title">Quote Summary</h2>
+      <div class="summary">
+        <div class="pill">
+          <div class="pill-label">Total Rooms</div>
+          <div class="pill-value" id="printTotalRooms">0</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Estimated Total Time</div>
+          <div class="pill-value" id="printTotalTime">0 min</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Hourly / Quote Rate</div>
+          <div class="pill-value" id="printDisplayRate">$0.00</div>
+        </div>
+        <div class="pill">
+          <div class="pill-label">Estimated Total Price</div>
+          <div class="pill-value" id="printEstimatedPrice">$0.00</div>
+        </div>
+      </div>
+    </section>
 
 <script>
   const STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v4';
