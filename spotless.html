@@ -480,61 +480,65 @@
     </section>
   </div>
 
-  <template id="roomTemplate">
-    <article class="room-card">
-      <div class="room-head">
-        <h3 class="room-title">Room</h3>
-        <button class="btn btn-danger remove-room-btn screen-only" type="button">Remove</button>
+ <template id="roomTemplate">
+  <article class="room-card">
+    <div class="room-head">
+      <h3 class="room-title">Room</h3>
+      <button class="btn btn-danger remove-room-btn screen-only" type="button">Remove</button>
+    </div>
+
+    <div class="room-grid">
+      <div class="field">
+        <label>Room Type</label>
+        <select class="room-type">
+          <option value="">Select Room Type</option>
+          <option value="Kitchen / Dining Room">Kitchen / Dining Room</option>
+          <option value="Bathroom">Bathroom</option>
+          <option value="Living Room">Living Room</option>
+          <option value="Bedroom">Bedroom</option>
+          <option value="Commercial Space">Commercial Space</option>
+          <option value="Custom">Custom</option>
+        </select>
       </div>
 
-      <div class="room-grid">
-        <div class="field">
-          <label>Room Name</label>
-			<select class="cleaning-type">
-            <option value="">Select Room Type</option>
-            <option value="Standard Clean">Kitchen/Dinning Room</option>
-            <option value="Deep Clean">Bathroom</option>
-            <option value="Move In / Move Out">Living Room</option>
-            <option value="Post Construction">Bedroom</option>
-            <option value="Disinfection">Comerical Space</option>
-            <option value="Custom">Custom</option>
-          </select>
-          <input type="text" class="room-name" placeholder="Example: Master Bathroom" />
-        </div>
-
-        <div class="field">
-          <label>Cleaning Type</label>
-          <select class="cleaning-type">
-            <option value="">Select cleaning type</option>
-            <option value="Standard Clean">Standard Clean</option>
-            <option value="Deep Clean">Deep Clean</option>
-            <option value="Move In / Move Out">Move In / Move Out</option>
-            <option value="Post Construction">Post Construction</option>
-            <option value="Disinfection">Disinfection</option>
-            <option value="Custom">Custom</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Estimated Time (minutes)</label>
-           <select class="cleaning-type">
-            <option value="">Select Estimated Time</option>
-            <option value="Standard Clean">30</option>
-            <option value="Deep Clean">60</option>
-            <option value="Move In / Move Out">90</option>
-            <option value="Post Construction">120</option>
-            <option value="Disinfection">150</option>
-            <option value="Custom">180</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Room Details / Tasks</label>
-          <textarea class="room-details" placeholder="List the cleaning tasks for this room"></textarea>
-        </div>
+      <div class="field">
+        <label>Room Name</label>
+        <input type="text" class="room-name" placeholder="Example: Master Bathroom" />
       </div>
-    </article>
-  </template>
+
+      <div class="field">
+        <label>Cleaning Type</label>
+        <select class="cleaning-type">
+          <option value="">Select cleaning type</option>
+          <option value="Standard Clean">Standard Clean</option>
+          <option value="Deep Clean">Deep Clean</option>
+          <option value="Move In / Move Out">Move In / Move Out</option>
+          <option value="Post Construction">Post Construction</option>
+          <option value="Disinfection">Disinfection</option>
+          <option value="Custom">Custom</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Estimated Time (minutes)</label>
+        <select class="estimated-time">
+          <option value="">Select Estimated Time</option>
+          <option value="30">30</option>
+          <option value="60">60</option>
+          <option value="90">90</option>
+          <option value="120">120</option>
+          <option value="150">150</option>
+          <option value="180">180</option>
+        </select>
+      </div>
+
+      <div class="field" style="grid-column:1 / -1;">
+        <label>Room Details / Tasks</label>
+        <textarea class="room-details" placeholder="List the cleaning tasks for this room"></textarea>
+      </div>
+    </div>
+  </article>
+</template>
 
   <script>
     const STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v3';
@@ -597,29 +601,36 @@
         };
       }catch(error){
         console.error('Unable to load saved planner data:', error);
-        return defaultState();
-      }
-    }
-
-    let state = loadState();
-
-    function saveState(){
-      try{
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      }catch(error){
-        console.error('Unable to save planner data:', error);
-      }
-    }
+        return {
+  jobName: parsed.jobName || '',
+  jobAddress: parsed.jobAddress || '',
+  jobHourlyRate: parsed.jobHourlyRate || '',
+  jobNotes: parsed.jobNotes || '',
+  clientName: parsed.clientName || '',
+  signatureDate: parsed.signatureDate || '',
+  signatureDataUrl: parsed.signatureDataUrl || '',
+  rooms: Array.isArray(parsed.rooms)
+    ? parsed.rooms.map(room => ({
+        id: room.id || crypto.randomUUID(),
+        roomType: room.roomType || '',
+        roomName: room.roomName || '',
+        cleaningType: room.cleaningType || '',
+        estimatedTime: room.estimatedTime || '',
+        roomDetails: room.roomDetails || ''
+      }))
+    : []
+};
 
     function newRoom(data = {}){
-      return {
-        id: data.id || crypto.randomUUID(),
-        roomName: data.roomName || '',
-        cleaningType: data.cleaningType || '',
-        estimatedTime: data.estimatedTime || '',
-        roomDetails: data.roomDetails || ''
-      };
-    }
+  return {
+    id: data.id || crypto.randomUUID(),
+    roomType: data.roomType || '',
+    roomName: data.roomName || '',
+    cleaningType: data.cleaningType || '',
+    estimatedTime: data.estimatedTime || '',
+    roomDetails: data.roomDetails || ''
+  };
+}
 
     function formatCurrency(value){
       return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(value || 0);
@@ -670,58 +681,81 @@
     }
 
     function render(){
-      els.jobName.value = state.jobName;
-      els.jobAddress.value = state.jobAddress;
-      els.jobHourlyRate.value = state.jobHourlyRate;
-      els.jobNotes.value = state.jobNotes;
-      els.clientName.value = state.clientName;
-      els.signatureDate.value = state.signatureDate;
-      els.roomsContainer.innerHTML = '';
+  els.jobName.value = state.jobName;
+  els.jobAddress.value = state.jobAddress;
+  els.jobHourlyRate.value = state.jobHourlyRate;
+  els.jobNotes.value = state.jobNotes;
+  els.clientName.value = state.clientName;
+  els.signatureDate.value = state.signatureDate;
+  els.roomsContainer.innerHTML = '';
 
-      if(state.rooms.length === 0){
-        els.roomsContainer.innerHTML = '<div class="empty">No rooms added yet. Tap “Add Room” to start building your quote.</div>';
-      } else {
-        state.rooms.forEach((room, index) => {
-          const fragment = els.roomTemplate.content.cloneNode(true);
-          const title = fragment.querySelector('.room-title');
-          const roomNameInput = fragment.querySelector('.room-name');
-          const cleaningTypeSelect = fragment.querySelector('.cleaning-type');
-          const estimatedTimeInput = fragment.querySelector('.estimated-time');
-          const roomDetailsTextarea = fragment.querySelector('.room-details');
-          const removeBtn = fragment.querySelector('.remove-room-btn');
+  if(state.rooms.length === 0){
+    els.roomsContainer.innerHTML = '<div class="empty">No rooms added yet. Tap “Add Room” to start building your quote.</div>';
+  } else {
+    state.rooms.forEach((room, index) => {
+      const fragment = els.roomTemplate.content.cloneNode(true);
 
-          title.textContent = room.roomName.trim() || `Room ${index + 1}`;
-          roomNameInput.value = room.roomName;
-          cleaningTypeSelect.value = room.cleaningType;
-          estimatedTimeInput.value = room.estimatedTime;
-          roomDetailsTextarea.value = room.roomDetails;
+      const title = fragment.querySelector('.room-title');
+      const roomTypeSelect = fragment.querySelector('.room-type');
+      const roomNameInput = fragment.querySelector('.room-name');
+      const cleaningTypeSelect = fragment.querySelector('.cleaning-type');
+      const estimatedTimeSelect = fragment.querySelector('.estimated-time');
+      const roomDetailsTextarea = fragment.querySelector('.room-details');
+      const removeBtn = fragment.querySelector('.remove-room-btn');
 
-          roomNameInput.addEventListener('input', event => {
-            const value = event.target.value;
-            updateRoom(room.id, { roomName: value });
-            title.textContent = value.trim() || `Room ${index + 1}`;
-          });
+      title.textContent = room.roomName.trim() || room.roomType.trim() || `Room ${index + 1}`;
 
-          cleaningTypeSelect.addEventListener('change', event => {
-            updateRoom(room.id, { cleaningType: event.target.value });
-          });
+      roomTypeSelect.value = room.roomType || '';
+      roomNameInput.value = room.roomName || '';
+      cleaningTypeSelect.value = room.cleaningType || '';
+      estimatedTimeSelect.value = room.estimatedTime || '';
+      roomDetailsTextarea.value = room.roomDetails || '';
 
-          estimatedTimeInput.addEventListener('input', event => {
-            updateRoom(room.id, { estimatedTime: event.target.value });
-          });
+      roomTypeSelect.addEventListener('change', event => {
+        const selectedType = event.target.value;
 
-          roomDetailsTextarea.addEventListener('input', event => {
-            updateRoom(room.id, { roomDetails: event.target.value });
-          });
+        const patch = { roomType: selectedType };
 
-          removeBtn.addEventListener('click', () => removeRoom(room.id));
-          els.roomsContainer.appendChild(fragment);
-        });
-      }
+        if ((!room.roomName || !room.roomName.trim()) && selectedType && selectedType !== 'Custom') {
+          patch.roomName = selectedType;
+          roomNameInput.value = selectedType;
+          title.textContent = selectedType;
+        }
 
-      updateStats();
-    }
+        updateRoom(room.id, patch);
 
+        const updatedRoom = state.rooms.find(item => item.id === room.id);
+        title.textContent =
+          (updatedRoom?.roomName || '').trim() ||
+          (updatedRoom?.roomType || '').trim() ||
+          `Room ${index + 1}`;
+      });
+
+      roomNameInput.addEventListener('input', event => {
+        const value = event.target.value;
+        updateRoom(room.id, { roomName: value });
+        title.textContent = value.trim() || roomTypeSelect.value.trim() || `Room ${index + 1}`;
+      });
+
+      cleaningTypeSelect.addEventListener('change', event => {
+        updateRoom(room.id, { cleaningType: event.target.value });
+      });
+
+      estimatedTimeSelect.addEventListener('change', event => {
+        updateRoom(room.id, { estimatedTime: event.target.value });
+      });
+
+      roomDetailsTextarea.addEventListener('input', event => {
+        updateRoom(room.id, { roomDetails: event.target.value });
+      });
+
+      removeBtn.addEventListener('click', () => removeRoom(room.id));
+      els.roomsContainer.appendChild(fragment);
+    });
+  }
+
+  updateStats();
+}
     function bindTopFields(){
       els.jobName.addEventListener('input', event => {
         state.jobName = event.target.value;
