@@ -982,33 +982,35 @@
     }
   };
 
-  const els = {
-    jobName: document.getElementById('jobName'),
-    jobAddress: document.getElementById('jobAddress'),
-    jobHourlyRate: document.getElementById('jobHourlyRate'),
-    jobNotes: document.getElementById('jobNotes'),
-    addRoomBtn: document.getElementById('addRoomBtn'),
-    clearAllBtn: document.getElementById('clearAllBtn'),
-    exportCsvBtn: document.getElementById('exportCsvBtn'),
-    pdfBtn: document.getElementById('pdfBtn'),
-    shareBtn: document.getElementById('shareBtn'),
-    copySummaryBtn: document.getElementById('copySummaryBtn'),
-    roomsContainer: document.getElementById('roomsContainer'),
-    roomTemplate: document.getElementById('roomTemplate'),
-    totalRooms: document.getElementById('totalRooms'),
-    totalTime: document.getElementById('totalTime'),
-    displayRate: document.getElementById('displayRate'),
-    estimatedPrice: document.getElementById('estimatedPrice'),
-    printTotalRooms: document.getElementById('printTotalRooms'),
-    printTotalTime: document.getElementById('printTotalTime'),
-    printDisplayRate: document.getElementById('printDisplayRate'),
-    printEstimatedPrice: document.getElementById('printEstimatedPrice'),
-    clientName: document.getElementById('clientName'),
-    signatureDate: document.getElementById('signatureDate'),
-    signaturePad: document.getElementById('signaturePad'),
-    clearSignatureBtn: document.getElementById('clearSignatureBtn'),
-    saveSignatureBtn: document.getElementById('saveSignatureBtn')
-  };
+ const els = {
+  jobName: document.getElementById('jobName'),
+  jobAddress: document.getElementById('jobAddress'),
+  jobHourlyRate: document.getElementById('jobHourlyRate'),
+  jobNotes: document.getElementById('jobNotes'),
+  addRoomBtn: document.getElementById('addRoomBtn'),
+  clearAllBtn: document.getElementById('clearAllBtn'),
+  addRoomBtn1: document.getElementById('addRoomBtn1'),
+  clearAllBtn1: document.getElementById('clearAllBtn1'),
+  exportCsvBtn: document.getElementById('exportCsvBtn'),
+  pdfBtn: document.getElementById('pdfBtn'),
+  shareBtn: document.getElementById('shareBtn'),
+  copySummaryBtn: document.getElementById('copySummaryBtn'),
+  roomsContainer: document.getElementById('roomsContainer'),
+  roomTemplate: document.getElementById('roomTemplate'),
+  totalRooms: document.getElementById('totalRooms'),
+  totalTime: document.getElementById('totalTime'),
+  displayRate: document.getElementById('displayRate'),
+  estimatedPrice: document.getElementById('estimatedPrice'),
+  printTotalRooms: document.getElementById('printTotalRooms'),
+  printTotalTime: document.getElementById('printTotalTime'),
+  printDisplayRate: document.getElementById('printDisplayRate'),
+  printEstimatedPrice: document.getElementById('printEstimatedPrice'),
+  clientName: document.getElementById('clientName'),
+  signatureDate: document.getElementById('signatureDate'),
+  signaturePad: document.getElementById('signaturePad'),
+  clearSignatureBtn: document.getElementById('clearSignatureBtn'),
+  saveSignatureBtn: document.getElementById('saveSignatureBtn')
+};
 
   function defaultState(){
     return {
@@ -1806,35 +1808,31 @@
     initSignaturePad();
   }
 
-  const els = {
-  jobName: document.getElementById('jobName'),
-  jobAddress: document.getElementById('jobAddress'),
-  jobHourlyRate: document.getElementById('jobHourlyRate'),
-  jobNotes: document.getElementById('jobNotes'),
-  addRoomBtn: document.getElementById('addRoomBtn'),
-  clearAllBtn: document.getElementById('clearAllBtn'),
-  addRoomBtn1: document.getElementById('addRoomBtn1'),
-  clearAllBtn1: document.getElementById('clearAllBtn1'),
-  exportCsvBtn: document.getElementById('exportCsvBtn'),
-  pdfBtn: document.getElementById('pdfBtn'),
-  shareBtn: document.getElementById('shareBtn'),
-  copySummaryBtn: document.getElementById('copySummaryBtn'),
-  roomsContainer: document.getElementById('roomsContainer'),
-  roomTemplate: document.getElementById('roomTemplate'),
-  totalRooms: document.getElementById('totalRooms'),
-  totalTime: document.getElementById('totalTime'),
-  displayRate: document.getElementById('displayRate'),
-  estimatedPrice: document.getElementById('estimatedPrice'),
-  printTotalRooms: document.getElementById('printTotalRooms'),
-  printTotalTime: document.getElementById('printTotalTime'),
-  printDisplayRate: document.getElementById('printDisplayRate'),
-  printEstimatedPrice: document.getElementById('printEstimatedPrice'),
-  clientName: document.getElementById('clientName'),
-  signatureDate: document.getElementById('signatureDate'),
-  signaturePad: document.getElementById('signaturePad'),
-  clearSignatureBtn: document.getElementById('clearSignatureBtn'),
-  saveSignatureBtn: document.getElementById('saveSignatureBtn')
-};
+  els.addRoomBtn?.addEventListener('click', addRoom);
+els.clearAllBtn?.addEventListener('click', clearAll);
+
+els.addRoomBtn1?.addEventListener('click', addRoom);
+els.clearAllBtn1?.addEventListener('click', clearAll);
+
+els.exportCsvBtn?.addEventListener('click', exportCsv);
+els.pdfBtn?.addEventListener('click', generatePdf);
+els.shareBtn?.addEventListener('click', sharePdf);
+els.copySummaryBtn?.addEventListener('click', copySummary);
+
+els.clearSignatureBtn?.addEventListener('click', () => {
+  state.signatureDataUrl = '';
+  saveState();
+  initSignaturePad();
+});
+
+els.saveSignatureBtn?.addEventListener('click', () => {
+  const canvas = els.signaturePad;
+  if (canvas) {
+    state.signatureDataUrl = canvas.toDataURL('image/png');
+    saveState();
+    alert('Signature saved.');
+  }
+});
 	
 
 
