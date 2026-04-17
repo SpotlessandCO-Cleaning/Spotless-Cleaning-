@@ -640,81 +640,113 @@
               <h4>Cleaning Check List</h4>
               <a href="spotless 2.html">Open full list</a>
             </div>
-            <div class="task-list">
-              <div class="task-item">
-                <div class="task-main">
-                  <div class="check">✓</div>
-                  <div>
-                    <strong>Kitchen deep clean</strong>
-                    <span>Wipe surfaces, sanitize sink, mop floors</span>
-                  </div>
-                </div>
-                <div class="status">Done</div>
-              </div>
-              <div class="task-item">
-                <div class="task-main">
-                  <div class="check">•</div>
-                  <div>
-                    <strong>Bathroom reset</strong>
-                    <span>Mirrors, fixtures, counters, and towels</span>
-                  </div>
-                </div>
-                <div class="status pending">In Progress</div>
-              </div>
-              <div class="task-item">
-                <div class="task-main">
-                  <div class="check">○</div>
-                  <div>
-                    <strong>Bedroom finishing touches</strong>
-                    <span>Dusting, linens, and final vacuum pass</span>
-                  </div>
-                </div>
-                <div class="status pending">Queued</div>
-              </div>
-            </div>
-          </div>
-
+            <div class="task-list" id="checklistPreview"></div>
           <div class="panel">
             <div class="panel-head">
               <h4>Upcoming Schedule</h4>
               <a href="Spotless_Booking.html">View calendar</a>
             </div>
-            <div class="schedule-list">
-              <div class="schedule-item">
-                <div class="schedule-main">
-                  <div class="time-chip">9:00</div>
-                  <div>
-                    <strong>Jones Residence</strong>
-                    <span>Recurring bi-weekly clean</span>
-                  </div>
-                </div>
-                <div class="status">Confirmed</div>
-              </div>
-              <div class="schedule-item">
-                <div class="schedule-main">
-                  <div class="time-chip">1:30</div>
-                  <div>
-                    <strong>New Client Walkthrough</strong>
-                    <span>Estimate visit and custom quote</span>
-                  </div>
-                </div>
-                <div class="status pending">Pending</div>
-              </div>
-              <div class="schedule-item">
-                <div class="schedule-main">
-                  <div class="time-chip">4:00</div>
-                  <div>
-                    <strong>Office Refresh</strong>
-                    <span>Evening tidy and supplies check</span>
-                  </div>
-                </div>
-                <div class="status">Confirmed</div>
-              </div>
+           <div class="schedule-list" id="schedulePreview"></div>
             </div>
           </div>
         </section>
       </section>
     </div>
   </main>
+  <script>
+function getStoredArray(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function renderChecklistPreview() {
+  const checklist = getStoredArray("spotless_checklist");
+  const container = document.getElementById("checklistPreview");
+
+  if (!container) return;
+
+  if (!checklist.length) {
+    container.innerHTML = `
+      <div class="task-item">
+        <div class="task-main">
+          <div class="check">○</div>
+          <div>
+            <strong>No checklist data yet</strong>
+            <span>Open the checklist page and save items to see them here.</span>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const latestItems = checklist.slice(0, 3);
+
+  container.innerHTML = latestItems.map(item => `
+    <div class="task-item">
+      <div class="task-main">
+        <div class="check">${
+          item.status === "Done" ? "✓" :
+          item.status === "In Progress" ? "•" : "○"
+        }</div>
+        <div>
+          <strong>${item.title || "Untitled task"}</strong>
+          <span>${item.note || ""}</span>
+        </div>
+      </div>
+      <div class="status ${item.status === "Done" ? "" : "pending"}">
+        ${item.status || "Queued"}
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderSchedulePreview() {
+  const schedule = getStoredArray("spotless_schedule");
+  const container = document.getElementById("schedulePreview");
+
+  if (!container) return;
+
+  if (!schedule.length) {
+    container.innerHTML = `
+      <div class="schedule-item">
+        <div class="schedule-main">
+          <div class="time-chip">--</div>
+          <div>
+            <strong>No schedule data yet</strong>
+            <span>Open the scheduling page and save appointments to see them here.</span>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const latestItems = schedule.slice(0, 3);
+
+  container.innerHTML = latestItems.map(item => `
+    <div class="schedule-item">
+      <div class="schedule-main">
+        <div class="time-chip">${item.time || "--"}</div>
+        <div>
+          <strong>${item.title || "Untitled appointment"}</strong>
+          <span>${item.note || ""}</span>
+        </div>
+      </div>
+      <div class="status ${item.status === "Confirmed" ? "" : "pending"}">
+        ${item.status || "Pending"}
+      </div>
+    </div>
+  `).join("");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderChecklistPreview();
+  renderSchedulePreview();
+});
+</script>
 </body>
 </html>
