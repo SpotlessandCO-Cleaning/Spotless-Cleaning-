@@ -587,7 +587,8 @@
       summarySelectedJobs: document.getElementById('summarySelectedJobs')
     };
     
-    const QUOTE_STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v4';
+    const STORAGE_KEY = 'spotless_co_job_booking_calendar_v1';
+const QUOTE_STORAGE_KEY = 'spotless_co_cleaning_quote_planner_v4';
 
 function loadQuotePlanner() {
   try {
@@ -597,7 +598,8 @@ function loadQuotePlanner() {
     return {};
   }
 }
-    function prefillFromQuotePlanner() {
+
+function prefillFromQuotePlanner() {
   const quote = loadQuotePlanner();
   const rooms = Array.isArray(quote.rooms) ? quote.rooms : [];
 
