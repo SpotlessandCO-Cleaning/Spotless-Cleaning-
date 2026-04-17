@@ -484,7 +484,6 @@
   <article class="room-card" data-room-id="">
     <div class="room-head">
       <h3 class="room-title">Room</h3>
-		<button class="btn btn-primary" id="addRoomBtn">+ Add Room</button>
       <button class="btn btn-danger remove-room-btn screen-only" type="button">Remove</button>
     </div>
 
@@ -555,6 +554,11 @@
         <label>Room Notes</label>
         <textarea class="room-notes" placeholder="Damage, stains, heavy buildup, pet hair, access notes, special requests"></textarea>
       </div>
+		<div class="quick-actions screen-only" style="margin-top:14px;">
+  <button class="btn btn-primary" id="addRoomBtn">+ Add Room</button>
+  <button class="btn btn-soft" id="clearAllBtn">Clear All</button>
+  <a href="index.html" class="btn btn-soft" style="text-decoration:none;display:grid;place-items:center;">Return Home</a>
+</div>
     </div>
   </article>
 </template>
